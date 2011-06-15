@@ -1,0 +1,5 @@
+*.pyc
+*.c
+*.so
+NOTES.txt
+*.swp
