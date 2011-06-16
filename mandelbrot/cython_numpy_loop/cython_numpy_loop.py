@@ -21,24 +21,12 @@ import calculate_z
 x1, x2, y1, y2 = -2.13, 0.77, -1.3, 1.3
 
 
-#def calculate_z_numpy(q, maxiter, z):
-#    output = nm.resize(nm.array(0,), q.shape)
-#    for iteration in range(maxiter):
-#        z = z*z + q
-#        done = nm.greater(abs(z), 2.0)
-#        q = nm.where(done,0+0j, q)
-#        z = nm.where(done,0+0j, z)
-#        output = nm.where(done, iteration, output)
-#    return output
-
 def calculate(show_output):
     # make a list of x and y values
     # xx is e.g. -2.13,...,0.712
     xx = nm.arange(x1, x2, (x2-x1)/w*2)
-    #xx = xx.astype(nm.float32)
     # yy is e.g. 1.29,...,-1.24
     yy = nm.arange(y2, y1, (y1-y2)/h*2) 
-    #yy = yy.astype(nm.float32)
     # we see a rounding error for arange on yy with h==1000
     # so here I correct for it
     if len(yy) > h / 2.0:
