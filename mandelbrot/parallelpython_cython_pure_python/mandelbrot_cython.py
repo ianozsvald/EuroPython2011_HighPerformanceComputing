@@ -12,6 +12,8 @@ import calculate_z
 
 
 def calc(inps):
+    """use the calculate_z module's calculate_z to process
+       the tuple of inps"""
     return calculate_z.calculate_z(inps)
 
 
@@ -29,7 +31,6 @@ def calc_pure_python(show_output):
     z = [0+0j] * len(q)
     print "Total elements:", len(z)
 
-
     # split work list into continguous chunks, one per CPU
     #chunk_size = len(q) / multiprocessing.cpu_count()
     chunk_size = len(q) / 16
@@ -46,6 +47,9 @@ def calc_pure_python(show_output):
     start_time = datetime.datetime.now()
 
     ppservers = ('localhost',)
+    # we MUST start 'ppserver.py -d' in this same directory in another
+    # term or else it can't see calculate_z.so and it'll barf!
+    # i.e. module must be in search path somehow
 
     NBR_LOCAL_CPUS = 0 # if 0, it sends jobs out to other ppservers
     job_server = pp.Server(NBR_LOCAL_CPUS, ppservers=ppservers)
@@ -55,6 +59,9 @@ def calc_pure_python(show_output):
     output = []
     jobs = []
     for chunk in chunks:
+        # specify with last tuple item that pp should import calculate_z
+        # module - this means it must be in the PYTHONPATH for ppserver.py
+        # or the local job_server
         job = job_server.submit(calc, (chunk,), (), ("calculate_z",))
         assert job is not None
         jobs.append(job)
@@ -65,7 +72,6 @@ def calc_pure_python(show_output):
     print job_server.print_stats()
 
     end_time = datetime.datetime.now()
-
 
     secs = end_time - start_time
     print "Main took", secs
