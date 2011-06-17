@@ -1,8 +1,8 @@
 # Mandelbrot calculate using GPU, Serial numpy and faster numpy
 # Use to show the speed difference between CPU and GPU calculations
-# ian@ianozsvald.com March 2010
+# ian@ianozsvald.com July 2011
 
-# Based on vegaseat's TKinter/numpy example code from 2006
+# Originally based on vegaseat's TKinter/numpy example code from 2006
 # http://www.daniweb.com/code/snippet216851.html#
 # with minor changes to move to numpy from the obsolete Numeric
 
@@ -21,142 +21,55 @@ import pycuda.gpuarray as gpuarray
 # area of space to investigate
 x1, x2, y1, y2 = -2.13, 0.77, -1.3, 1.3
 
-
-
-
-complex_gpu_sm_newindexing = SourceModule("""
-        // original newindexing code using original mandelbrot pycuda
-        #include <pycuda-complex.hpp>
-
-        __global__ void calc_gpu_sm_insteps(pycuda::complex<float> *z, pycuda::complex<float> *q, int *iteration, int maxiter, const int nbritems) {
-            //const int i = blockDim.x * blockIdx.x + threadIdx.x;
-            unsigned tid = threadIdx.x;
-            unsigned total_threads = gridDim.x * blockDim.x;
-            unsigned cta_start = blockDim.x * blockIdx.x;
-
-            for ( int i = cta_start + tid; i < nbritems; i += total_threads) {
-                for (int n=0; n < maxiter; n++) {
-                    z[i] = (z[i]*z[i])+q[i]; 
-                    if (abs(z[i]) > 2.0f) {
-                        iteration[i]=n; 
-                        z[i] = pycuda::complex<float>(); 
-                        q[i] = pycuda::complex<float>();
-                    }
-                };            
-            }
-        }
-        """)
-
-
-calc_gpu_sm_newindexing = complex_gpu_sm_newindexing.get_function('calc_gpu_sm_insteps')
-print 'complex_gpu_sm:'
-print 'Registers', calc_gpu_sm_newindexing.num_regs
-print 'Local mem', calc_gpu_sm_newindexing.local_size_bytes, 'bytes'
-print 'Shared mem', calc_gpu_sm_newindexing.shared_size_bytes, 'bytes'
-
-
-
-
-
-complex_gpu_sm = SourceModule("""
-        #include <pycuda-complex.hpp>
-
-        __global__ void calc_gpu_sm(pycuda::complex<float> *z, pycuda::complex<float> *q, int *iteration, int maxiter) {
-            const int i = blockDim.x * blockIdx.x + threadIdx.x;
-            iteration[i] = 0;
-            for (int n=0; n < maxiter; n++) {
-                z[i] = (z[i]*z[i])+q[i]; 
-                if (abs(z[i]) > 2.0f) {
-                    iteration[i]=n; 
-                    z[i] = pycuda::complex<float>(); 
-                    q[i] = pycuda::complex<float>();
-                }
-                   
-                //iteration[i] = abs(q[i]);
-            };            
-        }
-        """, keep=True)
-
-calc_gpu_sm = complex_gpu_sm.get_function('calc_gpu_sm')
-print 'complex_gpu_sm:'
-print 'Registers', calc_gpu_sm.num_regs
-print 'Local mem', calc_gpu_sm.local_size_bytes, 'bytes'
-print 'Shared mem', calc_gpu_sm.shared_size_bytes, 'bytes'
-
-
-
-
-
-def calculate_z_gpu_sourcemodule(q, maxiter, z):
-    z = z.astype(nm.complex64)
-    q = q.astype(nm.complex64)
-    output = nm.resize(nm.array(0,), q.shape)
-    # calc_gpu_sm is limited in size to whatever's the max GridX size
-    #calc_gpu_sm(drv.In(z), drv.In(q), drv.Out(output), numpy.int32(maxiter), grid=(len(q),1), block=(1,1,1))
-    # calc_gpu_sm_newindexing uses a step to iterate through larger amounts of data
-    calc_gpu_sm_newindexing(drv.In(z), drv.In(q), drv.InOut(output), numpy.int32(maxiter), numpy.int32(len(q)), grid=(400,1), block=(512,1,1))
-
-
-    #calc_gpu_sm_lightweight(drv.In(z), drv.In(q), drv.Out(output), numpy.int32(maxiter), grid=(blocks,1), block=(1,1,1))
-    #calc_gpu_sm_newindexing(drv.In(z), drv.In(q), drv.InOut(output), numpy.int32(maxiter), numpy.int32(len(q)), grid=(480,1), block=(48,1,1))
-
-    # double precision
-    #z = z.astype(nm.complex128)
-    #q = q.astype(nm.complex128)
-    #output = output.astype(nm.complex128)
-    #calc_gpu_sm_newindexing_double(drv.In(z), drv.In(q), drv.InOut(output), numpy.int32(maxiter), numpy.int32(len(q)), grid=(480,1), block=(512,1,1))
-
-    return output
-
-complex_gpu = ElementwiseKernel(
-        """pycuda::complex<float> *z, pycuda::complex<float> *q, int *iteration, int maxiter""",
-            """for (int n=0; n < maxiter; n++) {z[i] = (z[i]*z[i])+q[i]; if (abs(z[i]) > 2.00f) {iteration[i]=n; z[i] = pycuda::complex<float>(); q[i] = pycuda::complex<float>();};};""",
-        "complex5",
-        preamble="""#include <pycuda-complex.hpp>""",
-        keep=True)
-
-
-def calculate_z_gpu_elementwise(q, maxiter, z):
-    output = nm.resize(nm.array(0,), q.shape)
-    q_gpu = gpuarray.to_gpu(q.astype(nm.complex64))
-    z_gpu = gpuarray.to_gpu(z.astype(nm.complex64))
-    iterations_gpu = gpuarray.to_gpu(output) 
-    print "maxiter gpu", maxiter
-    # the for loop and complex calculations are all done on the GPU
-    # we bring the iterations_gpu array back to determine pixel colours later
-    complex_gpu(z_gpu, q_gpu, iterations_gpu, maxiter)
-
-    iterations = iterations_gpu.get()
-    return iterations
-
+# calculate_z using a CUDA card, this defaults to float32 to support
+# older CUDA devices, just edit two lines below lines to use float64s on 
+# newer CUDA devices
 
 def calculate_z_asnumpy_gpu(q, maxiter, z):
     """Calculate z using numpy on the GPU"""
+    # convert complex128s (2*float64) to complex64 (2*float32) so they run
+    # on older CUDA cards like the one in my MacBook. To use float64 doubles
+    # just edit these two lines
+    complex_type = nm.complex64 # or nm.complex128 on newer CUDA devices
+    float_type = nm.float32 # or nm.float64 on newer CUDA devices
+
+    # create an output array on the gpu of int32 as one long vector
     outputg = gpuarray.to_gpu(nm.resize(nm.array(0,), q.shape))
-    zg = gpuarray.to_gpu(z.astype(nm.complex64))
-    qg = gpuarray.to_gpu(q.astype(nm.complex64))
-    # 2.0 as an array
-    twosg = gpuarray.to_gpu(nm.array([2.0]*zg.size).astype(numpy.float32))
-    # 0+0j as an array
-    cmplx0sg = gpuarray.to_gpu(nm.array([0+0j]*zg.size).astype(nm.complex64))
-    # for abs_zg > twosg result
+    # resize our z and g as necessary to longer or shorter float types
+    z = z.astype(complex_type)
+    q = q.astype(complex_type)
+    # create zg and qg on the gpu
+    zg = gpuarray.to_gpu(z)
+    qg = gpuarray.to_gpu(q)
+    # create 2.0 as an array
+    twosg = gpuarray.to_gpu(nm.array([2.0]*zg.size).astype(float_type))
+    # create 0+0j as an array
+    cmplx0sg = gpuarray.to_gpu(nm.array([0+0j]*zg.size).astype(complex_type))
+    # create a bool array to hold the (for abs_zg > twosg) result later
     comparison_result = gpuarray.to_gpu(nm.array([False]*zg.size).astype(nm.bool))
-    # we'll add 1 to iterg after each iteration
+    # we'll add 1 to iterg after each iteration, create an array to hold the iteration count
     iterg = gpuarray.to_gpu(nm.array([0]*zg.size).astype(nm.int32))
     
     for iter in range(maxiter):
+        # multiply z on the gpu by itself, add q (on the gpu)
         zg = zg*zg + qg
-
         # abs returns a complex (rather than a float) from the complex
         # input where the real component is the absolute value (which
         # looks like a bug) so I take the .real after abs()
+        # the above bug relates to pyCUDA from mid2010, it might be fixed now...
         abs_zg = abs(zg).real
        
+        # figure out if zg is > 2
         comparison_result = abs_zg > twosg
+        # based on the result either take 0+0j for qg and zg or leave unchanged
         qg = gpuarray.if_positive(comparison_result, cmplx0sg, qg)
         zg = gpuarray.if_positive(comparison_result, cmplx0sg, zg)
+        # if the comparison is true then update the iterations count to outputg
+        # which we'll extract later
         outputg = gpuarray.if_positive(comparison_result, iterg, outputg)
+        # increment the iteration counter
         iterg = iterg + 1
+    # extract the result from the gpu back to the cpu
     output = outputg.get()
     return output
 
@@ -186,9 +99,7 @@ def calculate(show_output):
 
     start_time = datetime.datetime.now()
     print "Total elements:", len(q)
-    #output = calculate_z_asnumpy_gpu(q, maxiter, z)
-    #output = calculate_z_gpu_elementwise(q, maxiter, z)
-    output = calculate_z_gpu_sourcemodule(q, maxiter, z)
+    output = calculate_z_asnumpy_gpu(q, maxiter, z)
     end_time = datetime.datetime.now()
     secs = end_time - start_time
     print "Main took", secs
