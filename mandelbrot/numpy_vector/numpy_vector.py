@@ -1,6 +1,6 @@
 import datetime
 import sys
-import numpy as nm
+import numpy as np
 
 # area of space to investigate
 x1, x2, y1, y2 = -2.13, 0.77, -1.3, 1.3
@@ -20,9 +20,9 @@ def calculate_z_numpy(q, maxiter, z):
 def calculate(show_output):
     # make a list of x and y values
     # xx is e.g. -2.13,...,0.712
-    xx = nm.arange(x1, x2, (x2-x1)/w*2)
+    xx = np.arange(x1, x2, (x2-x1)/w*2)
     # yy is e.g. 1.29,...,-1.24
-    yy = nm.arange(y2, y1, (y1-y2)/h*2) * 1j
+    yy = np.arange(y2, y1, (y1-y2)/h*2) * 1j
     # we see a rounding error for arange on yy with h==1000
     # so here I correct for it
     if len(yy) > h / 2.0:
@@ -32,13 +32,13 @@ def calculate(show_output):
 
     print "xx and yy have length", len(xx), len(yy)
 
-    # yy will become 0+yyj when cast to complex128 (2 * 8byte float64) same as Python float 
-    yy = yy.astype(nm.complex128)
-    # create q as a square matrix initially of complex numbers we're calculating
-    # against, then flatten the array to a vector
-    q = nm.ravel(xx+yy[:, nm.newaxis]).astype(nm.complex128)
+    # create a square matrix using clever addressing
+    xx_yy_square_matrix = xx+yy[:, np.newaxis] # it is np.complex128
+    # convert square matrix to a flatted vector using ravel
+    q = np.ravel(xx_yy_square_matrix)
     # create z as a 0+0j array of the same length as q
-    z = nm.zeros(q.shape, nm.complex128)
+    # note that it defaults to reals (float64) unless told otherwise
+    z = nm.zeros(q.shape, np.complex128)
 
     start_time = datetime.datetime.now()
     print "Total elements:", len(q)
