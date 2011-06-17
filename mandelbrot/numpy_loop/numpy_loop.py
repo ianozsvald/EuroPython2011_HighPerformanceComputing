@@ -39,9 +39,12 @@ def calculate(show_output):
     # force yy, q and z to use 32 bit floats rather than
     # the default 64 doubles for nm.complex for consistency with CUDA
 
+    import datetime # DEBUG
     print "Total elements:", len(yy)*len(xx)
     start_time = datetime.datetime.now()
+    print "STARTING", datetime.datetime.now()
     output = calculate_z.calculate_z(xx, yy, maxiter)
+    print "ENDING", datetime.datetime.now()
     end_time = datetime.datetime.now()
     secs = end_time - start_time
     print "Main took", secs
