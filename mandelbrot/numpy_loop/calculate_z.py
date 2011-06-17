@@ -1,7 +1,4 @@
-
 import numpy as np
-
-import datetime # DEBUG
 
 def mandelbrot_escape(q, n, z):
     """ Mandelbrot set escape time algorithm in real and complex components
@@ -25,7 +22,6 @@ def calculate_z(xs, ys, maxiter):
     
     d = np.zeros((M, N)).astype(np.int)
     for j in range(M):
-        print "CALC J", j, M, datetime.datetime.now()
         for i in range(N):
             q = xs[i] + ys[j]*1j
             d[j,i] = mandelbrot_escape(q, maxiter, z)
