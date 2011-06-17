@@ -1,0 +1,36 @@
+Source code for High Performance Computing tutorial at EuroPython 2011
+ian@ianozsvald.com 
+
+Description:
+The 4 hour tutorial will cover various ways of speeding up the provided Mandelbrot code with a variety of Python packages that let us go from bytecode to C, run on many CPUs and many machines and also use a GPU. The presentation for the tutorial should give the necessary background.
+
+All the files are in subdirectories and are independent of each other, the general pattern is:
+python mandelbrot.py 1000 1000
+where "mandelbrot.py" might be named e.g. "pure_python.py" or "cython_numpy_loop.py", the first 1000 is the pixel width and height, the second 1000 is the number of iterations. 1000x1000px plots with 1000 iterations are pretty. Use the arguments "100 30" for a super quick test to validate that things are working (it makes a 100x100px image using only 30 iterations).
+
+Overview of the versions:
+pure_python: Python implementations for python and pypy
+cython_pure_python: a converstion of the python code using cython
+numpy_loop: a conversion of the python code using numpy vectors (but run without vector calls)
+cython_numpy_loop: as numpy_loop but compiled with cython
+numpy_vector: using vector calls on numpy vectors
+numpy_vector_numexpr: adding numexpr on the numpy vectors
+shedskin: minor conversion to get good speed using shedskin
+multiprocessing: using built-in multiprocessing module to run on all cores using pure python implementation
+parallelpython_pure_python: using parallelpython module to run across machines and cpus
+parallelpython_cython_pure_puthon: showing compiled cython version of pure_python running over machines 
+pycuda: gpuarray, elementwisekernel and sourcemodule examples of numpy-like and C code on CUDA GPUs via python
+
+Note that the pure_python examples run fine using PyPy or Python 2.7.1.
+
+Blog write-up (TO FOLLOW)
+
+Versions of packages used to create this tutorial:
+Cython 0.14.1
+numexpr 1.4.2
+numpy 1.5.1
+pyCUDA HEAD from git as of 14th June 2011
+PyPy 1.5
+Python 2.7.1
+ParallelPython 1.6.1
+ShedSkin 0.7.1
