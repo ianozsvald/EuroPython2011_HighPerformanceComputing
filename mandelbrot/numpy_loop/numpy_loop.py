@@ -11,7 +11,7 @@ import sys
 import numpy as nm
 import Image
 
-import generate_mandelbrot
+import calculate_z
 
 # You can choose a calculation routine below (calculate_z), uncomment
 # one of the three lines to test the three variations
@@ -20,16 +20,6 @@ import generate_mandelbrot
 # area of space to investigate
 x1, x2, y1, y2 = -2.13, 0.77, -1.3, 1.3
 
-
-def calculate_z_numpy(q, maxiter, z):
-    output = nm.resize(nm.array(0,), q.shape)
-    for iteration in range(maxiter):
-        z = z*z + q
-        done = nm.greater(abs(z), 2.0)
-        q = nm.where(done,0+0j, q)
-        z = nm.where(done,0+0j, z)
-        output = nm.where(done, iteration, output)
-    return output
 
 def calculate(show_output):
     # make a list of x and y values
@@ -51,7 +41,7 @@ def calculate(show_output):
 
     print "Total elements:", len(yy)*len(xx)
     start_time = datetime.datetime.now()
-    output = generate_mandelbrot.generate_mandelbrot(xx, yy, maxiter)
+    output = calculate_z.calculate_z(xx, yy, maxiter)
     end_time = datetime.datetime.now()
     secs = end_time - start_time
     print "Main took", secs
