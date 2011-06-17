@@ -22,7 +22,7 @@ def calc_pure_python(show_output):
     print "Total elements:", len(z)
 
     start_time = datetime.datetime.now()
-    output = calculate_z.calculate_z((q, maxiter, z))
+    output = calculate_z.calculate_z(q, maxiter, z)
     end_time = datetime.datetime.now()
 
     secs = end_time - start_time

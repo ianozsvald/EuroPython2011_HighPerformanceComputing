@@ -1,12 +1,14 @@
 
 # based on calculate_z_serial_purepython
-def calculate_z(inps):
+def calculate_z(list q, int maxiter, list z):
     cdef unsigned int i
-    cdef int maxiter, iteration
+    #cdef int maxiter, 
+    cdef int iteration
     cdef complex zi, qi
-    cdef list q, output
+    #cdef list q
+    cdef list output
 
-    q, maxiter, z = inps
+    #q, maxiter, z = inps
     output = [0] * len(q)
     for i in range(len(q)):
         #if i % 1000 == 0:
