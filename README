@@ -8,6 +8,8 @@ All the files are in subdirectories and are independent of each other, the gener
 python mandelbrot.py 1000 1000
 where "mandelbrot.py" might be named e.g. "pure_python.py" or "cython_numpy_loop.py", the first 1000 is the pixel width and height, the second 1000 is the number of iterations. 1000x1000px plots with 1000 iterations are pretty. Use the arguments "100 30" for a super quick test to validate that things are working (it makes a 100x100px image using only 30 iterations).
 
+The tutorial starts by using cProfile, RunSnakeRun and line_profiler to find the bottleneck, we then improve the code and add libraries to keep making things faster.
+
 Overview of the versions:
 pure_python: Python implementations for python and pypy
 cython_pure_python: a converstion of the python code using cython
@@ -29,7 +31,7 @@ Versions of packages used to create this tutorial:
 Cython 0.14.1
 numexpr 1.4.2
 numpy 1.5.1
-pyCUDA HEAD from git as of 14th June 2011
+pyCUDA HEAD from git as of 14th June 2011 (with CUDA 4.0 drivers)
 PyPy 1.5
 Python 2.7.1
 ParallelPython 1.6.1
