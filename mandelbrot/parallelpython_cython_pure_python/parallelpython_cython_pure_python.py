@@ -14,7 +14,8 @@ import calculate_z
 def calc(inps):
     """use the calculate_z module's calculate_z to process
        the tuple of inps"""
-    return calculate_z.calculate_z(inps)
+    q, maxiter, z = inps
+    return calculate_z.calculate_z(q, maxiter, z)
 
 
 def calc_pure_python(show_output):
