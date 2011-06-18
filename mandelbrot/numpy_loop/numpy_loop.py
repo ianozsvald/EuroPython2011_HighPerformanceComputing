@@ -45,11 +45,9 @@ def calculate_z(xs, ys, maxiter):
 def calculate(show_output):
     # make a list of x and y values
     # xx is e.g. -2.13,...,0.712
-    xx = np.arange(x1, x2, (x2-x1)/w*2)
-    #xx = xx.astype(nm.float32)
+    xx = np.arange(x1, x2, (x2-x1)/w*2) # dtype float64
     # yy is e.g. 1.29,...,-1.24
-    yy = np.arange(y2, y1, (y1-y2)/h*2) 
-    #yy = yy.astype(nm.float32)
+    yy = np.arange(y2, y1, (y1-y2)/h*2) # dtype float64
     # we see a rounding error for arange on yy with h==1000
     # so here I correct for it
     if len(yy) > h / 2.0:
