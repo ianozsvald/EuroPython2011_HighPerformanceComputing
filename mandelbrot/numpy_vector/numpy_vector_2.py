@@ -16,27 +16,21 @@ def calculate_z_numpy(q_full, maxiter, z_full):
     #STEP_SIZE = 90000 # 52
     #STEP_SIZE = 50000 # 45s
     #STEP_SIZE = 45000 # 45s
-    #STEP_SIZE = 20000 # 42s
+    #STEP_SIZE = 20000 # 42s # roughly this looks optimal on Macbook and dual core desktop i3
     #STEP_SIZE = 10000 # 43s
     #STEP_SIZE = 5000 # 45s
     #STEP_SIZE = 1000 # 1min02
-    STEP_SIZE = 100
+    STEP_SIZE = 100 # 3mins
     print "STEP_SIZE", STEP_SIZE
     for step in range(0, len(q_full), STEP_SIZE):
         z = z_full[step:step+STEP_SIZE]
         q = q_full[step:step+STEP_SIZE]
-        #nbr_done = 0
         for iteration in range(maxiter):
             z = z*z + q
             done = np.greater(abs(z), 2.0)
             q = np.where(done,0+0j, q)
             z = np.where(done,0+0j, z)
             output[step:step+STEP_SIZE] = np.where(done, iteration, output[step:step+STEP_SIZE])
-            #nbr_just_done = np.sum(np.where(done, 1, 0))
-            #nbr_done += nbr_just_done
-            #if (output[step:step+STEP_SIZE] > 0).all():
-            #if nbr_done == STEP_SIZE:
-            #    break
     return output
 
 
