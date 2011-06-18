@@ -16,11 +16,11 @@ def calculate_z_numpy(q_full, maxiter, z_full):
     #STEP_SIZE = 90000 # 52
     #STEP_SIZE = 50000 # 45s
     #STEP_SIZE = 45000 # 45s
-    #STEP_SIZE = 20000 # 42s # roughly this looks optimal on Macbook and dual core desktop i3
+    STEP_SIZE = 20000 # 42s # roughly this looks optimal on Macbook and dual core desktop i3
     #STEP_SIZE = 10000 # 43s
     #STEP_SIZE = 5000 # 45s
     #STEP_SIZE = 1000 # 1min02
-    STEP_SIZE = 100 # 3mins
+    #STEP_SIZE = 100 # 3mins
     print "STEP_SIZE", STEP_SIZE
     for step in range(0, len(q_full), STEP_SIZE):
         z = z_full[step:step+STEP_SIZE]
@@ -35,27 +35,36 @@ def calculate_z_numpy(q_full, maxiter, z_full):
 
 
 def calculate(show_output):
-    # make a list of x and y values
-    # xx is e.g. -2.13,...,0.712
-    xx = np.arange(x1, x2, (x2-x1)/w*2)
-    # yy is e.g. 1.29,...,-1.24
-    yy = np.arange(y2, y1, (y1-y2)/h*2) * 1j
-    # we see a rounding error for arange on yy with h==1000
-    # so here I correct for it
-    if len(yy) > h / 2.0:
-        yy = yy[:-1]
-    assert len(xx) == w / 2.0
-    assert len(yy) == h / 2.0
+    # make a list of x and y values which will represent q
+    # xx and yy are the co-ordinates, for the default configuration they'll look like:
+    # if we have a 1000x1000 plot
+    # xx = [-2.13, -2.1242, -2.1184000000000003, ..., 0.7526000000000064, 0.7584000000000064, 0.7642000000000064]
+    # yy = [1.3, 1.2948, 1.2895999999999999, ..., -1.2844000000000058, -1.2896000000000059, -1.294800000000006]
+    x_step = (float(x2 - x1) / float(w)) * 2
+    y_step = (float(y1 - y2) / float(h)) * 2
+    x=[]
+    y=[]
+    ycoord = y2
+    while ycoord > y1:
+        y.append(ycoord)
+        ycoord += y_step
+    xcoord = x1
+    while xcoord < x2:
+        x.append(xcoord)
+        xcoord += x_step
+    
+    x = np.array(x)
+    y = np.array(y) * 1j # make y a complex number
+    print "x and y have length:", len(x), len(y)
 
-    print "xx and yy have length", len(xx), len(yy)
-
-    # yy will become 0+yyj when cast to complex128 (2 * 8byte float64) same as Python float 
-    yy = yy.astype(np.complex128)
-    # create q as a square matrix initially of complex numbers we're calculating
-    # against, then flatten the array to a vector
-    q = np.ravel(xx+yy[:, np.newaxis]).astype(np.complex128)
+    # create a square matrix using clever addressing
+    x_y_square_matrix = x+y[:, np.newaxis] # it is np.complex128
+    # convert square matrix to a flatted vector using ravel
+    q = np.ravel(x_y_square_matrix)
     # create z as a 0+0j array of the same length as q
+    # note that it defaults to reals (float64) unless told otherwise
     z = np.zeros(q.shape, np.complex128)
+
 
     start_time = datetime.datetime.now()
     print "Total elements:", len(q)

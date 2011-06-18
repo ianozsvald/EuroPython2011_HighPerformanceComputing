@@ -19,24 +19,32 @@ def calculate_z_numpy(q, maxiter, z):
 
 
 def calculate(show_output):
-    # make a list of x and y values
-    # xx is e.g. -2.13,...,0.712
-    xx = np.arange(x1, x2, (x2-x1)/w*2) # dtype float64
-    # yy is e.g. 1.29,...,-1.24
-    yy = np.arange(y2, y1, (y1-y2)/h*2) * 1j # dtype complex128)
-    # we see a rounding error for arange on yy with h==1000
-    # so here I correct for it
-    if len(yy) > h / 2.0:
-        yy = yy[:-1]
-    assert len(xx) == w / 2.0
-    assert len(yy) == h / 2.0
-
-    print "xx and yy have length:", len(xx), len(yy)
+    # make a list of x and y values which will represent q
+    # xx and yy are the co-ordinates, for the default configuration they'll look like:
+    # if we have a 1000x1000 plot
+    # xx = [-2.13, -2.1242, -2.1184000000000003, ..., 0.7526000000000064, 0.7584000000000064, 0.7642000000000064]
+    # yy = [1.3, 1.2948, 1.2895999999999999, ..., -1.2844000000000058, -1.2896000000000059, -1.294800000000006]
+    x_step = (float(x2 - x1) / float(w)) * 2
+    y_step = (float(y1 - y2) / float(h)) * 2
+    x=[]
+    y=[]
+    ycoord = y2
+    while ycoord > y1:
+        y.append(ycoord)
+        ycoord += y_step
+    xcoord = x1
+    while xcoord < x2:
+        x.append(xcoord)
+        xcoord += x_step
+    
+    x = np.array(x)
+    y = np.array(y) * 1j # make y a complex number
+    print "x and y have length:", len(x), len(y)
 
     # create a square matrix using clever addressing
-    xx_yy_square_matrix = xx+yy[:, np.newaxis] # it is np.complex128
+    x_y_square_matrix = x+y[:, np.newaxis] # it is np.complex128
     # convert square matrix to a flatted vector using ravel
-    q = np.ravel(xx_yy_square_matrix)
+    q = np.ravel(x_y_square_matrix)
     # create z as a 0+0j array of the same length as q
     # note that it defaults to reals (float64) unless told otherwise
     z = np.zeros(q.shape, np.complex128)
