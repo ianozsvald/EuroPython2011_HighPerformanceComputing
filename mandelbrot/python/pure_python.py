@@ -21,7 +21,6 @@ def calculate_z_serial_purepython(q, maxiter, z):
     return output
 
 def calc_pure_python(show_output):
-    """Create z and q arrays without np.arange"""
     # make a list of x and y values which will represent q
     # xx and yy are the co-ordinates, for the default configuration they'll look like:
     # if we have a 1000x1000 plot
