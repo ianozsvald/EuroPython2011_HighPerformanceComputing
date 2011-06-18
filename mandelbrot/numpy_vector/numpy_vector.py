@@ -7,22 +7,22 @@ x1, x2, y1, y2 = -2.13, 0.77, -1.3, 1.3
 
 
 def calculate_z_numpy(q, maxiter, z):
-    output = nm.resize(nm.array(0,), q.shape)
+    output = np.resize(np.array(0,), q.shape)
     for iteration in range(maxiter):
         z = z*z + q
-        done = nm.greater(abs(z), 2.0)
-        q = nm.where(done,0+0j, q)
-        z = nm.where(done,0+0j, z)
-        output = nm.where(done, iteration, output)
+        done = np.greater(abs(z), 2.0)
+        q = np.where(done,0+0j, q)
+        z = np.where(done,0+0j, z)
+        output = np.where(done, iteration, output)
     return output
 
 
 def calculate(show_output):
     # make a list of x and y values
     # xx is e.g. -2.13,...,0.712
-    xx = np.arange(x1, x2, (x2-x1)/w*2)
+    xx = np.arange(x1, x2, (x2-x1)/w*2) # dtype float64
     # yy is e.g. 1.29,...,-1.24
-    yy = np.arange(y2, y1, (y1-y2)/h*2) * 1j
+    yy = np.arange(y2, y1, (y1-y2)/h*2) * 1j # dtype complex128)
     # we see a rounding error for arange on yy with h==1000
     # so here I correct for it
     if len(yy) > h / 2.0:
@@ -30,7 +30,7 @@ def calculate(show_output):
     assert len(xx) == w / 2.0
     assert len(yy) == h / 2.0
 
-    print "xx and yy have length", len(xx), len(yy)
+    print "xx and yy have length:", len(xx), len(yy)
 
     # create a square matrix using clever addressing
     xx_yy_square_matrix = xx+yy[:, np.newaxis] # it is np.complex128
@@ -38,7 +38,7 @@ def calculate(show_output):
     q = np.ravel(xx_yy_square_matrix)
     # create z as a 0+0j array of the same length as q
     # note that it defaults to reals (float64) unless told otherwise
-    z = nm.zeros(q.shape, np.complex128)
+    z = np.zeros(q.shape, np.complex128)
 
     start_time = datetime.datetime.now()
     print "Total elements:", len(q)
