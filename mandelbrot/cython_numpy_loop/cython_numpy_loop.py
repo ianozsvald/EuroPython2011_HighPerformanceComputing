@@ -8,7 +8,7 @@
 
 import datetime
 import sys
-import numpy as nm
+import numpy as np
 import Image
 
 import calculate_z
@@ -23,25 +23,39 @@ x1, x2, y1, y2 = -2.13, 0.77, -1.3, 1.3
 
 def calculate(show_output):
     # make a list of x and y values
-    # xx is e.g. -2.13,...,0.712
-    xx = nm.arange(x1, x2, (x2-x1)/w*2)
-    # yy is e.g. 1.29,...,-1.24
-    yy = nm.arange(y2, y1, (y1-y2)/h*2) 
-    # we see a rounding error for arange on yy with h==1000
-    # so here I correct for it
-    if len(yy) > h / 2.0:
-        yy = yy[:-1]
-    assert len(xx) == w / 2.0
-    assert len(yy) == h / 2.0
+    # make a list of x and y values which will represent q
+    # xx and yy are the co-ordinates, for the default configuration they'll look like:
+    # if we have a 1000x1000 plot
+    # xx = [-2.13, -2.1242, -2.1184000000000003, ..., 0.7526000000000064, 0.7584000000000064, 0.7642000000000064]
+    # yy = [1.3, 1.2948, 1.2895999999999999, ..., -1.2844000000000058, -1.2896000000000059, -1.294800000000006]
+    x_step = (float(x2 - x1) / float(w)) * 2
+    y_step = (float(y1 - y2) / float(h)) * 2
+    x=[]
+    y=[]
+    ycoord = y2
+    while ycoord > y1:
+        y.append(ycoord)
+        ycoord += y_step
+    xcoord = x1
+    while xcoord < x2:
+        x.append(xcoord)
+        xcoord += x_step
+    q = []
+    for ycoord in y:
+        for xcoord in x:
+            q.append(complex(xcoord,ycoord))
+    z = [0+0j] * len(q)
 
-    print "Total elements:", len(yy)*len(xx)
+    x = np.array(x)
+    y = np.array(y)
+    print "Total elements:", len(y)*len(x)
     start_time = datetime.datetime.now()
-    output = calculate_z.calculate_z(xx, yy, maxiter)
+    output = calculate_z.calculate_z(x, y, maxiter)
     end_time = datetime.datetime.now()
     secs = end_time - start_time
     print "Main took", secs
 
-    validation_sum = nm.sum(output)
+    validation_sum = np.sum(output)
     print "Total sum of elements (for validation):", validation_sum
 
     if show_output: 
