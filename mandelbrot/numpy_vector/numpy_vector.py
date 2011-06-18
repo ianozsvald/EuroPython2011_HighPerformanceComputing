@@ -7,6 +7,7 @@ x1, x2, y1, y2 = -2.13, 0.77, -1.3, 1.3
 
 
 def calculate_z_numpy(q, maxiter, z):
+    """use vector operations to update all zs and qs to create new output array"""
     output = np.resize(np.array(0,), q.shape)
     for iteration in range(maxiter):
         z = z*z + q
