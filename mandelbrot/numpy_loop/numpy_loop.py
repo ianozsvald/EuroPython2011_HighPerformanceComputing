@@ -50,22 +50,22 @@ def calculate(show_output):
     # yy = [1.3, 1.2948, 1.2895999999999999, ..., -1.2844000000000058, -1.2896000000000059, -1.294800000000006]
     x_step = (float(x2 - x1) / float(w)) * 2
     y_step = (float(y1 - y2) / float(h)) * 2
-    xx=[]
-    yy=[]
-    y = y2
-    while y > y1:
-        yy.append(y)
-        y += y_step
-    x = x1
-    while x < x2:
-        xx.append(x)
-        x += x_step
+    x=[]
+    y=[]
+    ycoord = y2
+    while ycoord > y1:
+        y.append(ycoord)
+        ycoord += y_step
+    xcoord = x1
+    while xcoord < x2:
+        x.append(xcoord)
+        xcoord += x_step
 
     #import ipdb; ipdb.set_trace()
 
-    print "Total elements:", len(yy)*len(xx)
+    print "Total elements:", len(y)*len(x)
     start_time = datetime.datetime.now()
-    output = calculate_z(xx, yy, maxiter)
+    output = calculate_z(x, y, maxiter)
     end_time = datetime.datetime.now()
     secs = end_time - start_time
     print "Main took", secs
