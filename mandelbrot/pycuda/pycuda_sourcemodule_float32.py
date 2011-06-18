@@ -4,7 +4,7 @@
 
 import sys
 import datetime
-import numpy as nm
+import numpy as np
 
 
 import pycuda.driver as drv
@@ -83,11 +83,11 @@ print 'Shared mem', calc_gpu_sm.shared_size_bytes, 'bytes'
 
 
 def calculate_z_gpu_sourcemodule(q, maxiter, z):
-    complex_type = nm.complex64 # or nm.complex128 on newer CUDA devices
-    #float_type = nm.float32 # or nm.float64 on newer CUDA devices
+    complex_type = np.complex64 # or nm.complex128 on newer CUDA devices
+    #float_type = np.float32 # or nm.float64 on newer CUDA devices
     z = z.astype(complex_type)
     q = q.astype(complex_type)
-    output = nm.resize(nm.array(0,), q.shape)
+    output = np.resize(np.array(0,), q.shape)
     # calc_gpu_sm is limited in size to whatever's the max GridX size (i.e. probably can't do 1000x1000 grids!)
     #calc_gpu_sm(drv.In(z), drv.In(q), drv.Out(output), numpy.int32(maxiter), grid=(len(q),1), block=(1,1,1))
     
@@ -98,27 +98,36 @@ def calculate_z_gpu_sourcemodule(q, maxiter, z):
 
 
 def calculate(show_output):
-    # make a list of x and y values
-    # xx is e.g. -2.13,...,0.712
-    xx = nm.arange(x1, x2, (x2-x1)/w*2)
-    # yy is e.g. 1.29,...,-1.24
-    yy = nm.arange(y2, y1, (y1-y2)/h*2) * 1j
-    # we see a rounding error for arange on yy with h==1000
-    # so here I correct for it
-    if len(yy) > h / 2.0:
-        yy = yy[:-1]
-    assert len(xx) == w / 2.0
-    assert len(yy) == h / 2.0
+    # make a list of x and y values which will represent q
+    # xx and yy are the co-ordinates, for the default configuration they'll look like:
+    # if we have a 1000x1000 plot
+    # xx = [-2.13, -2.1242, -2.1184000000000003, ..., 0.7526000000000064, 0.7584000000000064, 0.7642000000000064]
+    # yy = [1.3, 1.2948, 1.2895999999999999, ..., -1.2844000000000058, -1.2896000000000059, -1.294800000000006]
+    x_step = (float(x2 - x1) / float(w)) * 2
+    y_step = (float(y1 - y2) / float(h)) * 2
+    x=[]
+    y=[]
+    ycoord = y2
+    while ycoord > y1:
+        y.append(ycoord)
+        ycoord += y_step
+    xcoord = x1
+    while xcoord < x2:
+        x.append(xcoord)
+        xcoord += x_step
+    
+    x = np.array(x)
+    y = np.array(y) * 1j # make y a complex number
+    print "x and y have length:", len(x), len(y)
 
-    print "xx and yy have length", len(xx), len(yy)
-
-    # yy will become 0+yyj when cast to complex128 (2 * 8byte float64) same as Python float 
-    yy = yy.astype(nm.complex128)
-    # create q as a square matrix initially of complex numbers we're calculating
-    # against, then flatten the array to a vector
-    q = nm.ravel(xx+yy[:, nm.newaxis]).astype(nm.complex128)
+    # create a square matrix using clever addressing
+    x_y_square_matrix = x+y[:, np.newaxis] # it is np.complex128
+    # convert square matrix to a flatted vector using ravel
+    q = np.ravel(x_y_square_matrix)
     # create z as a 0+0j array of the same length as q
-    z = nm.zeros(q.shape, nm.complex128)
+    # note that it defaults to reals (float64) unless told otherwise
+    z = np.zeros(q.shape, np.complex128)
+
 
     start_time = datetime.datetime.now()
     print "Total elements:", len(q)
