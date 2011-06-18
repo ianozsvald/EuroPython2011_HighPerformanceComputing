@@ -24,17 +24,29 @@ def calculate_z_serial_purepython(inps):
 
 
 def calc_pure_python(show_output):
+    # make a list of x and y values which will represent q
+    # xx and yy are the co-ordinates, for the default configuration they'll look like:
+    # if we have a 1000x1000 plot
+    # xx = [-2.13, -2.1242, -2.1184000000000003, ..., 0.7526000000000064, 0.7584000000000064, 0.7642000000000064]
+    # yy = [1.3, 1.2948, 1.2895999999999999, ..., -1.2844000000000058, -1.2896000000000059, -1.294800000000006]
     x_step = (float(x2 - x1) / float(w)) * 2
-    y = y2
     y_step = (float(y1 - y2) / float(h)) * 2
+    x=[]
+    y=[]
+    ycoord = y2
+    while ycoord > y1:
+        y.append(ycoord)
+        ycoord += y_step
+    xcoord = x1
+    while xcoord < x2:
+        x.append(xcoord)
+        xcoord += x_step
     q = []
-    while y > y1:
-        x = x1
-        while x < x2:
-            q.append(complex(x,y))
-            x += x_step
-        y += y_step
+    for ycoord in y:
+        for xcoord in x:
+            q.append(complex(xcoord,ycoord))
     z = [0+0j] * len(q)
+
     print "Total elements:", len(z)
 
     # split work list into continguous chunks, one per CPU
@@ -62,8 +74,7 @@ def calc_pure_python(show_output):
     # I can't get autodiscover to work at home
     #ppservers=("*",) # autodiscover on network
 
-    NBR_LOCAL_CPUS = 2 # if 0, it sends jobs out to other ppservers
-    job_server = pp.Server(NBR_LOCAL_CPUS, ppservers=ppservers)
+    job_server = pp.Server(ppservers=ppservers)
     # it'll autodiscover the nbr of cpus it can use if first arg not specified
 
     print "Starting pp with", job_server.get_ncpus(), "local CPU workers"
