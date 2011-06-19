@@ -25,12 +25,6 @@ def calculate_z_serial_purepython(inps):
     return output
 
 
-def flatten(listOfLists):
-    "Flatten one level of nesting, recipe from itertools"
-    items_it = itertools.chain.from_iterable(listOfLists)
-    return [item for item in items_it]
-
-
 def calc_pure_python(show_output):
     # make a list of x and y values which will represent q
     # xx and yy are the co-ordinates, for the default configuration they'll look like:
@@ -57,7 +51,6 @@ def calc_pure_python(show_output):
 
     print "Total elements:", len(z)
 
-
     # split work list into continguous chunks, one per CPU
     # build this into chunks which we'll apply to map_async
     chunk_size = len(q) / multiprocessing.cpu_count()
@@ -81,9 +74,12 @@ def calc_pure_python(show_output):
     po = p.map_async(calculate_z_serial_purepython, chunks)
     # we get a list of lists back, one per chunk, so we have to
     # flatten them back together
-    # po.get() will block until results are ready
+    # po.get() will block until results are ready and then 
+    # return a list of lists of results
     results = po.get() # [[ints...], [ints...], []]
-    output = flatten(results) # flatten the results and ignore empty list
+    output = []
+    for res in results:
+        output += res
     end_time = datetime.datetime.now()
 
     secs = end_time - start_time
