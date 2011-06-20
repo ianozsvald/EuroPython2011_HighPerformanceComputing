@@ -11,10 +11,10 @@ x1, x2, y1, y2 = -2.13, 0.77, -1.3, 1.3
 import calculate_z
 
 
-def calc(inps):
+def calc(chunk):
     """use the calculate_z module's calculate_z to process
        the tuple of inps"""
-    q, maxiter, z = inps
+    q, maxiter, z = chunk
     return calculate_z.calculate_z(q, maxiter, z)
 
 
@@ -44,16 +44,18 @@ def calc_pure_python(show_output):
     print "Total elements:", len(z)
 
     # split work list into continguous chunks, one per CPU
-    #chunk_size = len(q) / multiprocessing.cpu_count()
-    chunk_size = len(q) / 16
-    chunks = []
-    chunk_number = 0
-    while True:
-        chunk = (q[chunk_number * chunk_size:chunk_size*(chunk_number+1)], maxiter, z[chunk_number * chunk_size:chunk_size*(chunk_number+1)]) 
-        chunks.append(chunk)
-        chunk_number += 1
-        if chunk_size * chunk_number > len(q):
-            break
+    # build this into chunks which we'll apply to map_async
+    nbr_chunks = 16 #multiprocessing.cpu_count()
+    chunk_size = len(q) / nbr_chunks
+
+    # split our long work list into smaller chunks
+    # make sure we handle the edge case where nbr_chunks doesn't evenly fit into len(q)
+    import math
+    if len(q) % nbr_chunks != 0:
+        # make sure we get the last few items of data when we have
+        # an odd size to chunks (e.g. len(q) == 100 and nbr_chunks == 3
+        nbr_chunks += 1
+    chunks = [(q[x*chunk_size:(x+1)*chunk_size],maxiter,z[x*chunk_size:(x+1)*chunk_size]) for x in xrange(nbr_chunks)]
     print chunk_size, len(chunks), len(chunks[0][0])
 
     start_time = datetime.datetime.now()
