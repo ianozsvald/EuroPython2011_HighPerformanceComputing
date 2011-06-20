@@ -8,8 +8,8 @@ x1, x2, y1, y2 = -2.13, 0.77, -1.3, 1.3
 # as for pure_python_2.py with z[i], q[i] dereferences removed
 
 
-def calculate_z_serial_purepython(inps):
-    q, maxiter, z = inps
+def calculate_z_serial_purepython(chunk):
+    q, maxiter, z = chunk
     output = [0] * len(q)
     for i in range(len(q)):
         zi = z[i]
@@ -53,18 +53,18 @@ def calc_pure_python(show_output):
 
     # split work list into continguous chunks, one per CPU
     # build this into chunks which we'll apply to map_async
-    chunk_size = len(q) / multiprocessing.cpu_count()
-    #chunk_size = len(q) / 4 # 4 not really faster than 2
-    chunks = []
-    chunk_number = 0
-    while True:
-        # create a chunk of chunk_size for (q, maxiter, z)
-        chunk = (q[chunk_number * chunk_size:chunk_size*(chunk_number+1)], maxiter, z[chunk_number * chunk_size:chunk_size*(chunk_number+1)]) 
-        chunks.append(chunk)
-        chunk_number += 1
-        if chunk_size * chunk_number > len(q):
-            break
-    #print chunk_size, len(chunks), len(chunks[0][0])
+    nbr_chunks = 4 #multiprocessing.cpu_count()
+    chunk_size = len(q) / nbr_chunks
+
+    # split our long work list into smaller chunks
+    # make sure we handle the edge case where nbr_chunks doesn't evenly fit into len(q)
+    import math
+    if len(q) % nbr_chunks != 0:
+        # make sure we get the last few items of data when we have
+        # an odd size to chunks (e.g. len(q) == 100 and nbr_chunks == 3
+        nbr_chunks += 1
+    chunks = [(q[x*chunk_size:(x+1)*chunk_size],maxiter,z[x*chunk_size:(x+1)*chunk_size]) for x in xrange(nbr_chunks)]
+    print chunk_size, len(chunks), len(chunks[0][0])
 
     # create a Pool which will create Python processes
     p = multiprocessing.Pool()
