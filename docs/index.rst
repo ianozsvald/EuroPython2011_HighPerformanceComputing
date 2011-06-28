@@ -32,15 +32,10 @@ Questions?
 * If you have questions about a specific library (e.g. pyCUDA) then go to the right user group for the best help
 * You can contact me if you have improvements or if you've spotted errors (but I can't help you learn Python, sorry!)
 
-License: **Creative Commons By Attribution** (and if you find this useful and you meet me in reality, I will happily accept a beer :-))
+License:
 
+* **Creative Commons By Attribution** (and if you find this useful and you meet me in reality, I will happily accept a beer :-))
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 
 Testimonials from EuroPython 2011
 =================================
@@ -54,7 +49,7 @@ Testimonials from EuroPython 2011
 * *First half of the optimization training with @ianozsvald (http://t.co/zU16MXQ) has been fun and really interesting #europython* **@pagles**
 
 .. figure:: HappyClassPhoto.jpg
-    :scale: 20 %
+    :width: 400px
     :align: center
 
     My happy class at EuroPython 2011
@@ -65,6 +60,23 @@ Motivation
 I ran a 4 hour tutorial on High Performance Python at EuroPython 2011. I'd like to see the training go to more people so I've written this guide. This is based on the official tutorial with some additions, I'm happy to accept updates.
 
 The slides for tutorial are linked on the front page of this document.
+
+If you'd like some background on programming for parallelised CPUs then the Economist has a nice overview article entitled "Parallel Bars" (June 2nd 2011): http://www.economist.com/node/18750706. It doesn't mention CUDA and OpenCL but the comment thread has some useful discussion. GvR gets a name-check in the article.
+
+Changelog
+---------
+
+* (v0.2 expected early July 2011 on http://ianozsvald.com)
+* v0.1 earliest release (rather draft-y) end of June 2011 straight after EuroPython 2011
+
+Credits
+-------
+* Thanks to my class of 40 at EuroPython for making the event so much fun :-)
+* The EuroPython team for letting me teach, the conference was a *lot* of fun
+* Mark Dufour and ShedSkin forum members
+* Cython team and forum members
+* Andreas Klöckner for pyCUDA
+* Everyone else who made the libraries that make my day job easier
 
 Goal
 ====
@@ -84,7 +96,32 @@ Techniques covered:
 * ParallelPython - run tasks on multiple computers
 * pyCUDA - run tasks on your Graphics Processing Unit
 
-**NOTEIAN graph the speed-ups we see, show cpython, C, parallel, pycuda**
+**IAN_TODO graph the speed-ups we see, show cpython, C, parallel, pycuda**
+
+Python, PyPy, Cython, ShedSkin
+------------------------------
+
+**IAN_TODO put in the figures, explain what's going on**
+
+==========     ===============    ==== =======
+ Tool          source             Time  Notes
+==========     ===============    ==== =======
+Python 2.7      pure_python.py    49s   none
+PyPy 1.5        pure_python.py    8.9s  none
+==========     ===============    ==== =======
+
+==========     ================   ==== =======
+ Tool          source             Time  Notes
+==========     ================   ==== =======
+Python 2.7     pure_python_2.py   30s   none
+PyPy 1.5       pure_python_2.py   5.7s
+==========     ================   ==== =======
+
+numpy vectors, pycuda
+---------------------
+
+multiprocessing, ParallelPython
+-------------------------------
 
 Using this as a tutorial
 ========================
@@ -106,7 +143,7 @@ In this tutorial we'll be generating a Mandelbrot plot, we're coding mostly in p
 
 We're using the Mandelbrot problem as we can vary the complexity of the task by drawing more (or less) pixels and we can calculate more (or less) iterations per pixel. We'll look at improvements in Python to make the code run a bit faster and then we'll look at fast C libraries and ways to convert the code directly to C for the best speed-ups.
 
-This task is embarressignly parallel which means that we can easily parallelise each operation. This allows us to experiment with multi-CPU and multi-machine approaches along with trying NVIDIA's CUDA on a Graphics Processing Unit.
+This task is embarrassingly parallel which means that we can easily parallelise each operation. This allows us to experiment with multi-CPU and multi-machine approaches along with trying NVIDIA's CUDA on a Graphics Processing Unit.
 
 
 Versions and dependencies
@@ -442,14 +479,12 @@ If you use a C extension like ``numpy`` then expect problems - some C libraries 
 
 By running ``pypy pure_python.py 1000 1000`` on my MacBook it takes 5.9 seconds, running ``pypy pure_python_2.py 1000 1000`` it takes 4.9 seconds. Note that there's no graphical output - ``PIL`` is supported in PyPy but ``numpy`` isn't and I've used ``numpy`` to generate the list-to-RGB-array conversion.
 
-**NOTEIAN WHAT SPEEDUPS DO WE EXPECT?** 
+**IAN_TODO WHAT SPEEDUPS DO WE EXPECT?** 
 
 Cython
 ======
 
-Cython lets us annotate our functions so they can be compiled to C. It takes a little bit of work (30-60 minutes to get started) and then typically gives us a nice speed-up.
-
-**NOTEIAN link to cython tutorial!**
+Cython lets us annotate our functions so they can be compiled to C. It takes a little bit of work (30-60 minutes to get started) and then typically gives us a nice speed-up. If you're new to Cython then the official tutorial is very helpful: http://docs.cython.org/src/userguide/tutorial.html
 
 To start this example I'll assume you've moved ``pure_python_2.py`` into a new directory (e.g. ``cython_pure_python\cython_pure_python.py``). We'll start a new module called ``calculate_z.py``, move the ``calculate_z`` function into this module. In ``cython_pure_python.py`` you'll have to ``import calculate_z`` and replace the reference to ``calculate_z(...)`` with ``calculate_z.calculate_z(...)``.
 
@@ -510,9 +545,19 @@ You can take a look to see how well the slower Python calls are being replaced w
 
 This will generate a new ``.html`` file, open that in your browser and you'll see something like:
 
-**NOTEIAN screen shot**
+.. figure:: cython-a.png
+    :align: center
+
+    Result of "cython -a calculate_z.pyx" in web browser
 
 Each time you add a type annotation Cython has the option to improve the resulting code. When it does so successfully you'll see the dark yellow lines turn lighter and eventually they'll turn white (showing that no further improvement is possible).
+
+If you're curious, double click a line of yellow code and it'll expand to show you the C Python API calls that it is making:
+
+.. figure:: cython-a_opened.png
+    :align: center
+
+    Double click a line to show the underlying C API calls (more calls mean more yellow)
 
 Let's add the annotations, see the example below where I've added type definitions. Remember to run the ``cython -a ...`` command and monitor the reduction in yellow in your web browser.
 
@@ -541,7 +586,6 @@ Recompile using the ``setup.py`` line above and confirm that the result is much 
 As you'll see in the ShedSkin version below we can achieve the best speed-up by expanding the complicated ``complex`` object into simpler ``double`` precision floating point numbers. The underlying C compiler knows how to execute these instructions in a faster way. 
 
 Expanding ``complex`` multiplication and addition involves a little bit of algebra (see WikiPedia for details). We declare a set of intermediate variables ``cdef double zx, zy, qx, qy, zx_new, zy_new``, dereference them from ``z[i]`` and ``q[i]`` and then replaced the final ``abs`` call with the expanded ``if (zx*zx + zy*zy) > 4.0`` logic (the sqrt of 4 is 2.0, ``abs`` would otherwise perform an expensive square-root on the result of the addition of the squares).
-**NOTEIAN final better math SPEEDUP**
 
 ::
 
@@ -572,17 +616,44 @@ Expanding ``complex`` multiplication and addition involves a little bit of algeb
                     break
         return output
 
-
-
 Cython with numpy arrays
 ========================
 
-**NOTEIAN link to numpy tutorial, show final result**
+**IAN_TODO link to numpy tutorial, show final result, explain the code**
+
+::
+
+    # ./cython_numpy_loop/cython_numpy_loop.py
+    from numpy import empty, zeros
+    cimport numpy as np
+
+    def calculate_z(np.ndarray[double, ndim=1] xs, np.ndarray[double, ndim=1] ys, int maxiter):
+        """ Generate a mandelbrot set """
+        cdef unsigned int i,j
+        cdef unsigned int N = len(xs)
+        cdef unsigned int M = len(ys)
+        cdef double complex q
+        cdef double complex z
+        cdef int iteration
+        
+        cdef np.ndarray[int, ndim=2] d = empty(dtype='i', shape=(M, N))
+        for j in range(M):
+            for i in range(N):
+                # create q without intermediate object (faster)
+                q = xs[i] + ys[j]*1j
+                z = 0+0j
+                for iteration in range(maxiter):
+                    z = z*z + q
+                    if z.real*z.real + z.imag*z.imag > 4.0:  
+                        break
+                else:
+                    iteration = 0
+                d[j,i] = iteration
+        return d
+
 
 ShedSkin
 ========
-
-**NOTEIAN add comments about profiling from Mark**
 
 ShedSkin automatically annotates your Python module and compiles it down to C. It works in a more restricted set of circumstances than Cython but when it works - it Just Works and requires very little effort on your part.
 
@@ -603,7 +674,7 @@ After this you'll have ``shedskin_pure_python`` which is an executable. Try it a
 
 ShedSkin has local C implementations of all of the core Python library (it can only ``import`` C-implemented modules that someone has written for ShedSkin!). For this reason we can't use ``numpy`` in a ShedSkin executable or module, you can pass a Python ``list`` across (and ``numpy`` lets you make a Python ``list`` from an ``array`` type), but that comes with a speed hit.
 
-The ``complex`` datatype has been implemented in a way that isn't as efficient as it could be (ShedSkin's author - **Mark Darfur SPELLING?** has stated that it could be made much more efficient if there's demand). If we expand the math using some algebra in exactly the same way that we did for the Cython example we get another huge jump in performance:
+The ``complex`` datatype has been implemented in a way that isn't as efficient as it could be (ShedSkin's author Mark Dufour has stated that it could be made much more efficient if there's demand). If we expand the math using some algebra in exactly the same way that we did for the Cython example we get another huge jump in performance:
 
 ::
 
@@ -627,9 +698,8 @@ The ``complex`` datatype has been implemented in a way that isn't as efficient a
                     break
         return output
 
-**optimisations? -ffast-math?  loop unrolling? auto vectorisation?**
-
-
+**IAN_TODO add comments about profiling from Mark**        
+**IAN_TODO optimisations? -ffast-math?  loop unrolling? auto vectorisation?**
 
 numpy vectors
 =============
@@ -670,8 +740,10 @@ You'll probably be curious why this code runs slower than the other ``numpy`` ve
 
 Behind the scenes ``numpy`` is using very fast C optimised math libraries to perform these calculations very quickly. If you consider how much extra work it is having to do (since it can't exit each calculation loop when ``output`` is calculated for a co-ordinate) it is amazing that it is still going so fast!
 
-**NOTEIAN why does this example run slower?**
+numpy vectors and cache considerations
+======================================
 
+**IAN_TODO short sidenote on cache sizes using existing recordings**
 
 NumExpr on numpy vectors
 ========================
@@ -701,7 +773,7 @@ I've replaced ``np.greater`` with ``>``, the use of ``np.greater`` just showed a
 
 You can only use ``numexpr`` on ``numpy`` code and it only makes sense to use it on vector operations. In the background ``numexpr`` breaks operations down into smaller segments that will fit into the CPU's cache, it'll also auto-vectorise across the available math units on the CPU if possible.
 
-On my dual-core MacBook I see **WHATKINDOFSPEEDUP?**, on my dual-core desktop i3 I see an even greater speed-up. If I had an Intel MKL version of ``numexpr`` (warning - needs a commercial license from Intel or Enthought) then I might see an even greater speed-up.
+On my dual-core MacBook I see **IAN_TODO show speedup**, on my dual-core desktop i3 I see an even greater speed-up. If I had an Intel MKL version of ``numexpr`` (warning - needs a commercial license from Intel or Enthought) then I might see an even greater speed-up.
 
 ``numexpr`` can give us some useful system information:
 
@@ -762,6 +834,173 @@ You might choose to pre-compile an expression in a fast loop if the overhead of 
 pyCUDA
 ======
 
+**IAN_TODO explain the 3 CUDA examples, refer back to numpy vector solution, talk about old/new CUDA cards, single/double precision**
+
+numpy-like interface
+--------------------
+
+::
+
+    import numpy as np
+    import pycuda.driver as drv
+    import pycuda.autoinit
+    import numpy
+    import pycuda.gpuarray as gpuarray
+
+    ...
+
+    def calculate_z_asnumpy_gpu(q, maxiter, z):
+        """Calculate z using numpy on the GPU"""
+        # convert complex128s (2*float64) to complex64 (2*float32) so they run
+        # on older CUDA cards like the one in my MacBook. To use float64 doubles
+        # just edit these two lines
+        complex_type = np.complex64 # or nm.complex128 on newer CUDA devices
+        float_type = np.float32 # or nm.float64 on newer CUDA devices
+
+        # create an output array on the gpu of int32 as one long vector
+        outputg = gpuarray.to_gpu(np.resize(np.array(0,), q.shape))
+        # resize our z and g as necessary to longer or shorter float types
+        z = z.astype(complex_type)
+        q = q.astype(complex_type)
+        # create zg and qg on the gpu
+        zg = gpuarray.to_gpu(z)
+        qg = gpuarray.to_gpu(q)
+        # create 2.0 as an array
+        twosg = gpuarray.to_gpu(np.array([2.0]*zg.size).astype(float_type))
+        # create 0+0j as an array
+        cmplx0sg = gpuarray.to_gpu(np.array([0+0j]*zg.size).astype(complex_type))
+        # create a bool array to hold the (for abs_zg > twosg) result later
+        comparison_result = gpuarray.to_gpu(np.array([False]*zg.size).astype(np.bool))
+        # we'll add 1 to iterg after each iteration, create an array to hold the iteration count
+        iterg = gpuarray.to_gpu(np.array([0]*zg.size).astype(np.int32))
+        
+        for iter in range(maxiter):
+            # multiply z on the gpu by itself, add q (on the gpu)
+            zg = zg*zg + qg
+            # abs returns a complex (rather than a float) from the complex
+            # input where the real component is the absolute value (which
+            # looks like a bug) so I take the .real after abs()
+            # the above bug relates to pyCUDA from mid2010, it might be fixed now...
+            abs_zg = abs(zg).real
+           
+            # figure out if zg is > 2
+            comparison_result = abs_zg > twosg
+            # based on the result either take 0+0j for qg and zg or leave unchanged
+            qg = gpuarray.if_positive(comparison_result, cmplx0sg, qg)
+            zg = gpuarray.if_positive(comparison_result, cmplx0sg, zg)
+            # if the comparison is true then update the iterations count to outputg
+            # which we'll extract later
+            outputg = gpuarray.if_positive(comparison_result, iterg, outputg)
+            # increment the iteration counter
+            iterg = iterg + 1
+        # extract the result from the gpu back to the cpu
+        output = outputg.get()
+        return output
+
+        ...
+
+        # create a square matrix using clever addressing
+        x_y_square_matrix = x+y[:, np.newaxis] # it is np.complex128
+        # convert square matrix to a flatted vector using ravel
+        q = np.ravel(x_y_square_matrix)
+        # create z as a 0+0j array of the same length as q
+        # note that it defaults to reals (float64) unless told otherwise
+        z = np.zeros(q.shape, np.complex128)
+
+
+        start_time = datetime.datetime.now()
+        print "Total elements:", len(q)
+        output = calculate_z_asnumpy_gpu(q, maxiter, z)
+        end_time = datetime.datetime.now()
+        secs = end_time - start_time
+        print "Main took", secs
+
+
+
+ElementWise
+-----------
+
+::
+
+    from pycuda.elementwise import ElementwiseKernel
+
+    complex_gpu = ElementwiseKernel(
+            """pycuda::complex<float> *z, pycuda::complex<float> *q, int *iteration, int maxiter""",
+                """for (int n=0; n < maxiter; n++) {z[i] = (z[i]*z[i])+q[i]; if (abs(z[i]) > 2.00f) {iteration[i]=n; z[i] = pycuda::complex<float>(); q[i] = pycuda::complex<float>();};};""",
+            "complex5",
+            preamble="""#include <pycuda-complex.hpp>""",
+            keep=True)
+
+
+    def calculate_z_gpu_elementwise(q, maxiter, z):
+        # convert complex128s (2*float64) to complex64 (2*float32) so they run
+        # on older CUDA cards like the one in my MacBook. To use float64 doubles
+        # just edit these two lines
+        complex_type = np.complex64 # or nm.complex128 on newer CUDA devices
+        #float_type = np.float32 # or nm.float64 on newer CUDA devices
+        output = np.resize(np.array(0,), q.shape)
+        q_gpu = gpuarray.to_gpu(q.astype(complex_type))
+        z_gpu = gpuarray.to_gpu(z.astype(complex_type))
+        iterations_gpu = gpuarray.to_gpu(output) 
+        print "maxiter gpu", maxiter
+        # the for loop and complex calculations are all done on the GPU
+        # we bring the iterations_gpu array back to determine pixel colours later
+        complex_gpu(z_gpu, q_gpu, iterations_gpu, maxiter)
+
+        iterations = iterations_gpu.get()
+        return iterations
+
+
+SourceModule
+------------
+
+::
+
+    from pycuda.compiler import SourceModule
+
+    complex_gpu_sm_newindexing = SourceModule("""
+            // original newindexing code using original mandelbrot pycuda
+            #include <pycuda-complex.hpp>
+
+            __global__ void calc_gpu_sm_insteps(pycuda::complex<float> *z, pycuda::complex<float> *q, int *iteration, int maxiter, const int nbritems) {
+                //const int i = blockDim.x * blockIdx.x + threadIdx.x;
+                unsigned tid = threadIdx.x;
+                unsigned total_threads = gridDim.x * blockDim.x;
+                unsigned cta_start = blockDim.x * blockIdx.x;
+
+                for ( int i = cta_start + tid; i < nbritems; i += total_threads) {
+                    for (int n=0; n < maxiter; n++) {
+                        z[i] = (z[i]*z[i])+q[i]; 
+                        if (abs(z[i]) > 2.0f) {
+                            iteration[i]=n; 
+                            z[i] = pycuda::complex<float>(); 
+                            q[i] = pycuda::complex<float>();
+                        }
+                    };            
+                }
+            }
+            """)
+
+    calc_gpu_sm_newindexing = complex_gpu_sm_newindexing.get_function('calc_gpu_sm_insteps')
+    print 'complex_gpu_sm:'
+    print 'Registers', calc_gpu_sm_newindexing.num_regs
+    print 'Local mem', calc_gpu_sm_newindexing.local_size_bytes, 'bytes'
+    print 'Shared mem', calc_gpu_sm_newindexing.shared_size_bytes, 'bytes'
+
+    def calculate_z_gpu_sourcemodule(q, maxiter, z):
+        complex_type = np.complex64 # or nm.complex128 on newer CUDA devices
+        #float_type = np.float32 # or nm.float64 on newer CUDA devices
+        z = z.astype(complex_type)
+        q = q.astype(complex_type)
+        output = np.resize(np.array(0,), q.shape)
+        # calc_gpu_sm is limited in size to whatever's the max GridX size (i.e. probably can't do 1000x1000 grids!)
+        
+        # calc_gpu_sm_newindexing uses a step to iterate through larger amounts of data (i.e. can do 1000x1000 grids!)
+        calc_gpu_sm_newindexing(drv.In(z), drv.In(q), drv.InOut(output), numpy.int32(maxiter), numpy.int32(len(q)), grid=(400,1), block=(512,1,1))
+
+        return output
+
+
 multiprocessing
 ===============
 
@@ -787,7 +1026,8 @@ In the code below we use a list comprehension to make sub-lists for ``q`` and ``
         # make sure we get the last few items of data when we have
         # an odd size to chunks (e.g. len(q) == 100 and nbr_chunks == 3
         nbr_chunks += 1
-    chunks = [(q[x*chunk_size:(x+1)*chunk_size],maxiter,z[x*chunk_size:(x+1)*chunk_size]) for x in xrange(nbr_chunks)]
+    chunks = [(q[x*chunk_size:(x+1)*chunk_size],maxiter,z[x*chunk_size:(x+1)*chunk_size]) \
+        for x in xrange(nbr_chunks)]
     print chunk_size, len(chunks), len(chunks[0][0])
 
 Before setting up sub-processes we should verify that the chunks of work still produce the expected output. We'll iterate over each chunk in sequence, run the ``calculate_z`` calculation and then join the returned result with the growing ``output`` list. This lets us confirm that the numerical progression occurs *exactly* as before (if it doesn't - there's a bug in your code!). This is a useful sanity check before the possible complications of race conditions and ordering come to play with multi-processing code.
@@ -835,7 +1075,7 @@ Finally we ask for ``po.get()`` which is a blocking operation - we get a list of
 
 Note that we may not achieve a 2* speed-up on a dual core CPU as there will be an overhead in the first (serial) process when creating the work chunks and then a second overhead when the input data is sent to the new process, then the result has to be sent back. The sending of data involves a ``pickle`` operation which adds extra overhead. On our 8MB problem we can see a small slowdown.
 
-**NOTEIAN show the results of the slowdown!**
+**IAN_TODO show the results of the slowdown!**
 
 ParallelPython
 ==============
@@ -908,7 +1148,7 @@ Run ``ppserver.py -d`` on the remote machine too (so now you have two running). 
 
 I found that few jobs were distributed over the network poorly - jobs of several MB each were rarely received by the remote processes (they often threw Execptions in the remote ``ppserver.py``), so utilisation was poor. By using a larger ``nbr_chunks`` the tasks are each smaller and are sent and received more reliably. This may just be a quirk of ParallelPython (I'm relatively new to this module!).
 
-**NOTEIAN show the timings we get**
+**IAN_TODO show the timings we get**
 
 Other examples?
 ===============
@@ -938,3 +1178,4 @@ I'd be interested in seeing the following examples implemented using the same co
 * Theano
 * Copperhead
 * pure C implementation as a benchmark (this must produce exactly the same validation sum)
+* ctypes using C implementation so Python is the nice wrapper

@@ -178,9 +178,16 @@ htmlhelp_basename = 'HighPerformancePythonfromTrainingatEuroPython2011doc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'HighPerformancePythonfromTrainingatEuroPython2011.tex', u'High Performance Python (from Training at EuroPython 2011) Documentation',
-   u'Ian Ozsvald', 'manual'),
+  ('index', 'HighPerformancePythonfromTrainingatEuroPython2011.tex', u'High Performance Python (from Training at EuroPython 2011)',
+   u'Ian Ozsvald (@ianozsvald)', 'manual'),
 ]
+
+# make latex stop printing blank pages between sections
+# http://stackoverflow.com/questions/5422997/sphinx-docs-remove-blank-pages-from-generated-pdfs
+latex_elements = { 'classoptions': ',openany,oneside', 'babel' : '\\usepackage[english]{babel}' }
+
+# other possibly useful customisation notes
+# http://stackoverflow.com/questions/4839105/sphinx-customization-of-latexpdf-output
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
