@@ -83,6 +83,8 @@ Goal
 
 In this tutorial we're looking at a number of techniques to make CPU-bound tasks in Python run much faster. Speed-ups of 10-500* are to be expected if you have a problem that fits into these solutions.
 
+In the results further below I show that the Mandelbrot problem can be made to run 75* faster with relatively little work on the CPU and up to 500* faster using a GPU (admittedly with some C integration!).
+
 Techniques covered:
 
 * Python profiling (cProfile, RunSnake, line_profiler) - find bottlenecks
@@ -96,32 +98,95 @@ Techniques covered:
 * ParallelPython - run tasks on multiple computers
 * pyCUDA - run tasks on your Graphics Processing Unit
 
-**IAN_TODO graph the speed-ups we see, show cpython, C, parallel, pycuda**
+MacBook Core2Dueo 2.0GHz
+------------------------
 
-Python, PyPy, Cython, ShedSkin
-------------------------------
+**IAN_TODO add in graphs**
 
-**IAN_TODO put in the figures, explain what's going on**
+Below I show the speed-ups obtained on my older laptop and later a comparitive study using a newer desktop with a faster GPU.
 
-==========     ===============    ==== =======
- Tool          source             Time  Notes
-==========     ===============    ==== =======
-Python 2.7      pure_python.py    49s   none
-PyPy 1.5        pure_python.py    8.9s  none
-==========     ===============    ==== =======
+These timings are taken from my 2008 MacBook 2.0GHz with 4GB RAM. The GPU is a 9400M (very underpowered for this kind of work!).
 
-==========     ================   ==== =======
- Tool          source             Time  Notes
-==========     ================   ==== =======
-Python 2.7     pure_python_2.py   30s   none
-PyPy 1.5       pure_python_2.py   5.7s
-==========     ================   ==== =======
+We start with the original ``pure_python.py`` code which has too many dereference operations. Running it with PyPy and no modifications results in an easily won speed-up.
 
-numpy vectors, pycuda
----------------------
+==========    =================  =====  
+ Tool         Source             Time   
+==========    =================  =====  
+Python 2.7    pure_python.py     49s    
+PyPy 1.5      pure_python.py      8.9s   
+==========    =================  =====  
 
-multiprocessing, ParallelPython
--------------------------------
+Next we modify the code to make ``pure_python_2.py`` with less dereferences, it runs faster for both CPython and PyPy. Compiling with Cython doesn't give us much compared to using PyPy but once we've added static types and expanded the ``complex`` arithmetic we're down to 0.6s.
+
+Cython with ``numpy`` vectors in place of ``list`` containers runs even faster (I've not drilled into this code to confirm if code differences can be attributed to this speed-up - perhaps this is an exercise for the reader?). Using ShedSkin with no code modificatoins we drop to 12s, after expanding the ``complex`` arithmetic it drops to 0.4s beating all the other variants.
+
+Be aware that on my MacBook Cython uses ``gcc 4.0`` and ShedSkin uses ``gcc 4.2`` - it is possible that the minor speed variations can be attributed to the differences in compiler versions. I'd welcome someone with more time performing a strict comparison between the two versions (the 0.6s, 0.49s and 0.4s results) to see if Cython and ShedSkin are producing equivalently fast code.
+
+Do remember that more manual work goes into the Cython version than the ShedSkin version.
+
+============  =================  ====== ============================
+ Tool         Source             Time   Notes
+============  =================  ====== ============================
+Python 2.7    pure_python_2.py   30s    
+PyPy 1.5      pure_python_2.py    5.7s
+Cython        calculate_z.pyx    20s    no static types
+Cython        calculate_z.pyx     9.8s  static types
+Cython        calculate_z.pyx     0.6s  +expanded math
+Cython+numpy  calculate_z.pyx     0.49s  uses numpy in place of lists
+ShedSkin      shedskin1.py       12s    as pure_python_2.py
+ShedSkin      shedskin2.py        0.4s  expanded math
+============  =================  ====== ============================
+
+Next we switch to vector techniques for solving this problem. This is a less efficient way of tackling the problem as we can't exit the inner-most loops early, so we do *lots* of extra work. For this reason it isn't fair to compare this approach to the previous table. Results within the table however can be compared.
+
+``numpy_vector.py`` uses a straight-forward vector implementation. ``numpy_vector_2.py`` uses smaller vectors that fit into the MacBook's cache, so less memory thrashing occurs. The ``numexpr`` version auto-tunes and auto-vectorises the ``numpy_vector.py`` code to beat my hand-tuned version. 
+
+The pyCUDA variants show a ``numpy``-like syntax and then switch to a lower level C implementation. Note that the 9400M is restricted to single precision (``float32``) floating point operations (it can't do ``float64`` arithmetic like the rest of the examples), see the GTX 480 result below for a ``float64`` true comparison.
+
+Even with a slow GPU you can achieve a nice speed improvement using pyCUDA with ``numpy``-like syntax compared to executing on the CPU (admittedly you're restricted to ``float32`` math on older GPUs). If you're prepared to recode the core bottleneck with some C then the improvements are even greater.
+
+============  ============================= ====== ==============================
+ Tool         Source                        Time   Notes
+============  ============================= ====== ==============================
+numpy         numpy_vector.py               54s    uses vectors rather than lists
+numpy         numpy_vector_2.py             42s    tuned vector operations
+numpy         numpy_vector_numexpr.py       19.1s  'compiled' with numexpr
+pyCUDA        pycuda_asnumpy_float32.py     10s    using old/slow 9400M GPU
+pyCUDA        pycuda_elementwise_float32.py  1.4s  as above but core routine in C
+============  ============================= ====== ==============================
+
+Finally we look at using multi-CPU and multi-computer scaling approaches. The goal here is to look at easy ways of parallelising to all the resources available around one desk (we're avoiding large clusters and cloud solutions in this report). 
+
+The first result is the ``pure_python_2.py`` result from the second table (shown only for reference). ``multi.py`` uses the ``multiprocessing`` module to parallelise across two cores in my MacBook. The first ParallelPython example works exaclty the same as ``multi.py`` but has lower overhead (I believe it does less serialising of the environment). The second version is parallelised across three machines and their CPUs. 
+
+The final result uses the 0.6s Cython version (running on one core) and shows the overheads of splitting work and serialising it to new environments (though on a larger problem the overheads would shrink in comparison to the savings made).
+
+=============== ==================================== ====== ================================
+ Tool           Source                               Time   Notes
+=============== ==================================== ====== ================================
+Python 2.7      pure_python_2.py                     30s    original serial code   
+multiprocessing multi.py                             19.s   same routine on two cores
+ParallelPython  parallelpython_pure_python.py        18s    same routine on two cores
+ParallelPython  parallelpython_pure_python.py         6s     same routine on three machines
+ParallelPython  parallelpython_cython_pure_python.py  1.4s  0.4s cython version on two cores
+=============== ==================================== ====== ================================
+
+
+2.9GHz i3 desktop with GTX 480 GPU
+----------------------------------
+
+Here I've run the same examples on a desktop with a GTX 480 GPU which is far more powerful than my laptop's 9400M, it can also support double-precision arithmetic. The GTX 480 was the fastest consumer-grade NVIDIA GPU during 2010, double precision arithmetic is slower than single precision arithmetic (the double-precision in the scientific C series was even faster, with a big price hike).
+
+The take-home message for the table below is that re-coding a vector operation to run on a fast GPU may bring you a 10* speed-up with very little work, it may bring you a 500* speed-up if you're prepared to recode the heart of the routine in C.
+
+============= ============================== ====== ================================
+ Tool         Source                         Time   Notes
+============= ============================== ====== ================================
+Python 2.7    pure_python_2.py               35s    (slower that laptop - odd!)
+pyCUDA        pycuda_asnumpy_float64.py      3.5s   GTX480 with float64 precision
+pyCUDA        pycuda_elementwise_float64.py  0.07s  as above but core routine in C
+============= ============================== ====== ================================
+
 
 Using this as a tutorial
 ========================
@@ -152,15 +217,15 @@ Versions and dependencies
 The tools depend on a few other libraries, you'll want to install them first:
 
 * CPython 2.7.2
+* line_profiler 1.0b2
+* RunSnake 2.0.1 (and it depends on wxPython)
+* PIL (for drawing the plot)
 * PyPy 1.5
-* Numpy 1.5.1
 * Cython 0.14.1
+* Numpy 1.5.1
 * ShedSkin 0.8 (and this depends on a few C libraries)
 * NumExpr 1.4.2
-* RunSnake 2.0.1 (and it depends on wxPython)
-* line_profiler 1.0b2
 * pyCUDA 0.94 (HEAD as of June 2011 and it depends on the CUDA development libraries, I'm using CUDA 4.0)
-* PIL (for drawing the plot)
 
 Pure Python (CPython) implementation
 ====================================
@@ -479,8 +544,6 @@ If you use a C extension like ``numpy`` then expect problems - some C libraries 
 
 By running ``pypy pure_python.py 1000 1000`` on my MacBook it takes 5.9 seconds, running ``pypy pure_python_2.py 1000 1000`` it takes 4.9 seconds. Note that there's no graphical output - ``PIL`` is supported in PyPy but ``numpy`` isn't and I've used ``numpy`` to generate the list-to-RGB-array conversion.
 
-**IAN_TODO WHAT SPEEDUPS DO WE EXPECT?** 
-
 Cython
 ======
 
@@ -589,7 +652,7 @@ Expanding ``complex`` multiplication and addition involves a little bit of algeb
 
 ::
 
-    ian-ozsvalds-macbook:cython_pure_python ian$ more calculate_z.pyx_2_bettermath 
+    # calculate_z.pyx_2_bettermath 
     def calculate_z(list q, int maxiter, list z):
         cdef unsigned int i
         cdef int iteration
@@ -615,6 +678,8 @@ Expanding ``complex`` multiplication and addition involves a little bit of algeb
                     output[i] = iteration
                     break
         return output
+
+**IAN_TODO add references to compiler directives and profiling**
 
 Cython with numpy arrays
 ========================
@@ -655,10 +720,11 @@ Cython with numpy arrays
 ShedSkin
 ========
 
-ShedSkin automatically annotates your Python module and compiles it down to C. It works in a more restricted set of circumstances than Cython but when it works - it Just Works and requires very little effort on your part.
+ShedSkin automatically annotates your Python module and compiles it down to C. It works in a more restricted set of circumstances than Cython but when it works - it Just Works and requires very little effort on your part. One of the included examples is a Commodore 64 emulator that jumps from a few frames per second when demoing a game to over 50 FPS, where the main emulation is compiled by ShedSkin and used as an extension module to pyGTK running in CPython.
 
 Its main limitations are:
-* prefers short modules (less than 3,000 lines of code)
+
+* prefers short modules (less than 3,000 lines of code - this is still rather a lot for a bottleneck routine!)
 * only uses built-in modules (e.g. you can't import ``numpy`` or ``PIL`` into a ShedSkin module)
 
 You run it using ``shedskin your_module.py``. In our case move ``pure_python_2.py`` into a new directory (``shedskin_pure_python\shedskin_pure_python.py``). We could make a new module (as we did for the Cython example) but for now we'll just one the one Python file.
@@ -698,6 +764,15 @@ The ``complex`` datatype has been implemented in a way that isn't as efficient a
                     break
         return output
 
+When debugging it is helpful to know what types the code analysis has detected. Use:
+
+::
+
+    shedskin -a your_module.py
+
+and you'll have annotated ``.cpp`` and ``.hpp`` files which tie the generated C with the original Python. You can also disable bounds checking with ``-b`` and wrap-around checking with ``-w`` which can give a speed boost (if you're confident that your array indexing is correct!). For ``int64` long integer support add ``-l``. For other flags see the documentation.
+
+**IAN_TODO link to Mark's AST graph**
 **IAN_TODO add comments about profiling from Mark**        
 **IAN_TODO optimisations? -ffast-math?  loop unrolling? auto vectorisation?**
 
@@ -773,7 +848,7 @@ I've replaced ``np.greater`` with ``>``, the use of ``np.greater`` just showed a
 
 You can only use ``numexpr`` on ``numpy`` code and it only makes sense to use it on vector operations. In the background ``numexpr`` breaks operations down into smaller segments that will fit into the CPU's cache, it'll also auto-vectorise across the available math units on the CPU if possible.
 
-On my dual-core MacBook I see **IAN_TODO show speedup**, on my dual-core desktop i3 I see an even greater speed-up. If I had an Intel MKL version of ``numexpr`` (warning - needs a commercial license from Intel or Enthought) then I might see an even greater speed-up.
+On my dual-core MacBook I see a 2-3* speed-up. If I had an Intel MKL version of ``numexpr`` (warning - needs a commercial license from Intel or Enthought) then I might see an even greater speed-up.
 
 ``numexpr`` can give us some useful system information:
 
@@ -906,7 +981,6 @@ numpy-like interface
         # create z as a 0+0j array of the same length as q
         # note that it defaults to reals (float64) unless told otherwise
         z = np.zeros(q.shape, np.complex128)
-
 
         start_time = datetime.datetime.now()
         print "Total elements:", len(q)
@@ -1075,7 +1149,7 @@ Finally we ask for ``po.get()`` which is a blocking operation - we get a list of
 
 Note that we may not achieve a 2* speed-up on a dual core CPU as there will be an overhead in the first (serial) process when creating the work chunks and then a second overhead when the input data is sent to the new process, then the result has to be sent back. The sending of data involves a ``pickle`` operation which adds extra overhead. On our 8MB problem we can see a small slowdown.
 
-**IAN_TODO show the results of the slowdown!**
+If you refer back to the speed timings at the start of the report you'll see that we don't achieve a doubling of speed, indeed the ParallelPython example (next) runs faster. This is to do with how the ``multiprocessing`` module safely prepares the remote execution environment, it does reduce the speed-up you can achieve if your jobs are short-lived.
 
 ParallelPython
 ==============
@@ -1148,7 +1222,7 @@ Run ``ppserver.py -d`` on the remote machine too (so now you have two running). 
 
 I found that few jobs were distributed over the network poorly - jobs of several MB each were rarely received by the remote processes (they often threw Execptions in the remote ``ppserver.py``), so utilisation was poor. By using a larger ``nbr_chunks`` the tasks are each smaller and are sent and received more reliably. This may just be a quirk of ParallelPython (I'm relatively new to this module!).
 
-**IAN_TODO show the timings we get**
+As shown at the start of the report the ParallelPython module is very efficient, we get almost a doubling in performance by using both cores on the laptop. When sending jobs over the network the network communications adds an additional overhead - if your jobs are long-running then this will be a minor part of your run-time.
 
 Other examples?
 ===============
@@ -1169,13 +1243,15 @@ In my examples I've used ``numpy`` to convert the ``output`` array into an RGB s
         # Bail gracefully if we're using PyPy
         print "Couldn't import Image or numpy:", str(err)
 
-I'd be interested in seeing the following examples implemented using the same code format as above. I've not made these myself as I haven't tried any of them yet. If you want to put an example together, please send it through to me:
+I'd be interested in seeing the following examples implemented using the same code format as above (I've listed them as most-to-least interesting). I've not made these myself as I haven't tried any of them yet. If you want to put an example together, please send it through to me:
 
-* pyMPI (which opens the dorr to more parallelisation in scientific environments)
-* Celery (which opens the door to more parallelisation in web-dev environments)
-* pyOpenCL
-* Hadoop and Map/Reduce with Python bindings
-* Theano
 * Copperhead
-* pure C implementation as a benchmark (this must produce exactly the same validation sum)
+* Theano
+* pure C implementation (this must produce exactly the same validation sum) for reference
+* pyOpenCL
+* pyMPI (which opens the door to more parallelisation in scientific environments)
+* Celery (which opens the door to more parallelisation in web-dev environments)
+* Hadoop and Map/Reduce with Python bindings
 * ctypes using C implementation so Python is the nice wrapper
+* Final versions of ShedSkin and Cython examples which go "as fast as possible"
+* Additional compiler flags that would make ShedSkin and Cython go faster (without changing correctness)
