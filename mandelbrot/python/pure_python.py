@@ -57,13 +57,14 @@ def calc_pure_python(show_output):
     if show_output: 
         try:
             import Image
-            import numpy as nm
-            output = nm.array(output)
-            output = (output + (256*output) + (256**2)*output) * 8
+            import array
+            output = ((o + (256*o) + (256**2)*o) * 8 for o in output)
+            output = array.array('I', output)
+            #output = (output + (256*output) + (256**2)*output) * 8
             im = Image.new("RGB", (w/2, h/2))
             im.fromstring(output.tostring(), "raw", "RGBX", 0, -1)
             im.show()
-        except ImportError as err:
+        except ImportError, err:
             # Bail gracefully if we're using PyPy
             print "Couldn't import Image or numpy:", str(err)
 
