@@ -24,7 +24,9 @@ Source:
 
 * http://tinyurl.com/europyhpc # zip file of build-as-you-go training src (but may get out of date)
 * https://github.com/ianozsvald/EuroPython2011_HighPerformanceComputing # full src for all examples (up to date)
+* Use "git clone git@github.com:ianozsvald/EuroPython2011_HighPerformanceComputing.git" to get the source or download a zipped snapshot from the page above
 * http://ep2011.europython.eu/conference/talks/experiences-making-cpu-bound-tasks-run-much-faster # slides
+* http://www.slideshare.net/IanOzsvald/euro-python2011-high-performance-python # same slides in SlideShare
 
 Questions?
 
