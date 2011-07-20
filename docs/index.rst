@@ -44,11 +44,14 @@ Testimonials from EuroPython 2011
 
 * *@ianozsvald does an excellent workshop on what one needs to know about performance and python #europython* **@LBdN**
 * *Ozsvald's training about speeding up tasks yesterday was awesome! #europython* **@Mirko_Rossini**
+* *PDF from @ianozsvald's High Performance Python workshop http://t.co/TS94l3V It allowed us to make parts of @setjam code 2x faster. Read it!* **@mstepniowski**
+* *Yup. I call it “Advanced Toilet Literature” http://lockerz.com/s/115235120”* **@emilbronikowski**
 * *#EuroPython high performance #Python workshop by @ianozsvald is most excellent! Learned about RunSnakeRun, line profiler, dis module, Cython* **@mstepniowski**
 * *@mstepniowski @ianozsvald line profiler is amazing, and such a hidden gem* **@zeeg**
 * *Inspired to try out pp after @ianozsvald #EuroPython training* **@ajw007**
 * *@ianozsvald's talk on speeding up #python code is high speed itself! #europython* **@snakecharmerb**
 * *Don't miss this, Ian's training was terrific! RT @ianozsvald: 43 pages of High Performance Python tutorial PDF written up #europython* **@europython**
+* *“@ianozsvald The #Europython2011 HighPerf #python material is absolutely amazing \o/ Thanks for that !”* **@BaltoRouberol**
 * *First half of the optimization training with @ianozsvald (http://t.co/zU16MXQ) has been fun and really interesting #europython* **@pagles**
 
 .. figure:: HappyClassPhoto.jpg
@@ -138,7 +141,7 @@ Techniques covered:
 * ParallelPython - run tasks on multiple computers
 * pyCUDA - run tasks on your Graphics Processing Unit
 
-MacBook Core2Dueo 2.0GHz
+MacBook Core2Duo 2.0GHz
 ------------------------
 
 Below I show the speed-ups obtained on my older laptop and later a comparitive study using a newer desktop with a faster GPU.
@@ -244,7 +247,7 @@ The take-home message for the table below is that re-coding a vector operation t
 ============= ============================== ====== ================================
  Tool         Source                         Time   Notes
 ============= ============================== ====== ================================
-Python 2.7    pure_python_2.py               35s    (slower that laptop - odd!)
+Python 2.7    pure_python_2.py               35s    (slower than laptop - odd!)
 pyCUDA        pycuda_asnumpy_float64.py      3.5s   GTX480 with float64 precision
 pyCUDA        pycuda_elementwise_float64.py  0.07s  as above but core routine in C
 ============= ============================== ====== ================================
@@ -276,7 +279,7 @@ The tools depend on a few other libraries, you'll want to install them first:
 * line_profiler 1.0b2
 * RunSnake 2.0.1 (and it depends on wxPython)
 * PIL (for drawing the plot)
-* PyPy 1.5
+* PyPy pypy-c-jit-45137-65b1ed60d7da-osx64 (from the nightly builds around July 2011)
 * Cython 0.14.1
 * Numpy 1.5.1
 * ShedSkin 0.8 (and this depends on a few C libraries)
@@ -606,22 +609,22 @@ PyPy
 
 PyPy is a new Just In Time compiler for the Python programming language. It runs on Windows, Mac and Linux and as of the middle of 2011 it runs Python 2.7. Generally you code will just run in PyPy and often it'll run faster (I've seen reports of 2-10* speed-ups). Sometimes small amounts of work are required to correct code that runs in CPython but shows errors in PyPy. Generally this is because the programmer has (probably unwittingly!) used shortcuts that work in CPython that aren't actually correct in the Python specification.
 
-Our example runs without modification in PyPy. I've used both PyPy 1.5 and the latest HEAD from the nightly builds (taken on June 20th for my Mac). The latest nightly build is a bit faster than PyPy 1.5.
+Our example runs without modification in PyPy. I've used both PyPy 1.5 and the latest HEAD from the nightly builds (taken on June 20th for my Mac). The latest nightly build is a bit faster than PyPy 1.5, I've used the timings from the nightly build here.
 
 If you *aren't* using a C library like ``numpy`` then you should try PyPy - it might just make your code run several times faster. At EuroPython 2011 I saw a Sobel Edge Detection demo than runs in pure Python - with PyPy it runs 450* faster than CPython! The PyPy team are committed to making PyPy faster and more stable, since it supports Python 2.7 (which is the end of the Python 2.x line) you can expect it to keep getting faster for a while yet.
 
-If you use a C extension like ``numpy`` then expect problems - some C libraries are integrated, many aren't, some like ``numpy`` will probably require a re-write (which will be a multi-month undertaking). During 2011 at least it looks as though ``numpy`` integration will not happen.
+If you use a C extension like ``numpy`` then expect problems - some C libraries are integrated, many aren't, some like ``numpy`` will probably require a re-write (which will be a multi-month undertaking). During 2011 at least it looks as though ``numpy`` integration will not happen. Note that you can do ``import numpy`` in ``pypy`` and you'll get a minimal array interface that behaves in a numpy-like fashion but for now it has very few functions and only supports ``double`` arithmetic.
 
-By running ``pypy pure_python.py 1000 1000`` on my MacBook it takes 5.9 seconds, running ``pypy pure_python_2.py 1000 1000`` it takes 4.9 seconds. Note that there's no graphical output - ``PIL`` is supported in PyPy but ``numpy`` isn't and I've used ``numpy`` to generate the list-to-RGB-array conversion.
+By running ``pypy pure_python.py 1000 1000`` on my MacBook it takes 5.9 seconds, running ``pypy pure_python_2.py 1000 1000`` it takes 4.9 seconds. Note that there's no graphical output - ``PIL`` is supported in PyPy but ``numpy`` isn't and I've used ``numpy`` to generate the list-to-RGB-array conversion (**update** see the last section of this document for a fix that removes ``numpy`` and allows ``PIL`` to work with PyPy!).
 
-**IAN_TODO compare shedskin2.py on PyPy, does expanding the math there make PyPy faster?**
+As an additional test (not shown in the graphs) I ran ``pypy shedskin2.py 1000 1000`` which runs the expanded math version of the ``shedskin`` variant below (this replaces ``complex`` numbers with ``floats`` and expands ``abs`` to avoid the square root). The ``shedskin2.py`` result takes 3.2 seconds (which is still much slower than the 0.4s version compiled using ``shedskin``).
 
 Psyco
 =====
 
-Psyco is a Just In Time compiler for 32 bit Python, it used to be really popular but it is less supported on Python 2.7 and doesn't run on 64 bit systems. The author now works exclusively on PyPy. 
+Psyco is a Just In Time compiler for 32 bit Python, it used to be really popular but it is less supported on Python 2.7 and doesn't (and won't) run on 64 bit systems. The author now works exclusively on PyPy. 
 
-Right now I don't have a benchmark but I could have one - **IAN_TODO run pure_python/pure_python_2/shedskin2 on Ubuntu with Python 2.6 32 bit (or maybe macbook's py2.6 will work with psyco?)**
+**IAN_TODO consider running pure_python/pure_python_2/shedskin2 on Ubuntu 32 bit with Python 2.6 32 bit**
 
 Cython
 ======
@@ -757,16 +760,35 @@ Expanding ``complex`` multiplication and addition involves a little bit of algeb
                     break
         return output
 
-**IAN_TODO add references to compiler directives and profiling**
+Compiler directives
+-------------------
+
+Cython has several compiler directives that enable profiling with ``cProfile`` and can improve performance: http://wiki.cython.org/enhancements/compilerdirectives
+
+The directives can be enabled globally (in the Cython) file using a comment at the top of the file or by altering ``setup.py`` and you can decorate each function individually. Generally I only have a few functions in a ``.pyx`` file so I enable the directives globally in the module using the comment syntax.
+
+``profile`` lets you enable or disable ``cProfile`` support. This is only useful when profiling (and adds a minor overhead). It gives you exactly the same output as running ``cProfile`` on a normal Python module.
+
+``boundscheck`` lets you disable out-of-bounds index checking on buffered arrays (mostly this will apply to ``numpy`` arrays - see next section). Since it doesn't need to check for ``IndexError`` exceptions it runs faster. If you make a mistake here then expect a segmentation fault. I have seen speed-ups using this option but not for the Mandelbrot problem shown here.
+
+``wraparound`` can disable support for ``-n`` array indexing (i.e. indexing backwards). In my experiments I've not seen this option generate a speed-up.
+
+There is also experimental ``infer_types`` support which is supposed to guess the type of variables, I've not achieved any speed-up when trying this (unlike for ShedSkin where the automatic type inference works wonderfully well).
+
 
 Cython with numpy arrays
 ========================
 
-**IAN_TODO link to numpy tutorial, show final result, explain the code**
+Below we have a similar Cython file, the original version for this approach was subbmited by Didrik Pinte of Enthought (thanks Didrik!). The main difference is the annotation of ``numpy`` arrays, see the tutorial for a great walkthrough: http://docs.cython.org/src/tutorial/numpy.html (and there's a bit more detail in the wiki: http://wiki.cython.org/tutorials/numpy).
+
+Using the ``numpy`` approach Python is able to address the underlying C data structures that are wrapped by ``numpy`` without the Python call overheads. This version of the Mandelbrot solver runs almost at the same speed as the ShedSkin solution (shown in the next section), making it the second fastest single-CPU implementation in this tutorial.
+
+**IAN_TODO I ought to remove Didrik's local declaration of z = 0+0j to make it a fairer comparision with the rest of the code (though my gut says that this will have little effect on the runtime)**
 
 ::
 
-    # ./cython_numpy_loop/cython_numpy_loop.py
+    # calculate_z.pyx
+    # see ./cython_numpy_loop/cython_numpy_loop.py
     from numpy import empty, zeros
     cimport numpy as np
 
@@ -798,12 +820,14 @@ Cython with numpy arrays
 ShedSkin
 ========
 
-ShedSkin automatically annotates your Python module and compiles it down to C. It works in a more restricted set of circumstances than Cython but when it works - it Just Works and requires very little effort on your part. One of the included examples is a Commodore 64 emulator that jumps from a few frames per second when demoing a game to over 50 FPS, where the main emulation is compiled by ShedSkin and used as an extension module to pyGTK running in CPython.
+ShedSkin automatically annotates your Python module and compiles it down to C. It works in a more restricted set of circumstances than Cython but when it works - it Just Works and requires very little effort on your part. One of the included examples is a Commodore 64 emulator that jumps from a few frames per second with CPython when demoing a game to over 50 FPS, where the main emulation is compiled by ShedSkin and used as an extension module to pyGTK running in CPython.
 
 Its main limitations are:
 
 * prefers short modules (less than 3,000 lines of code - this is still rather a lot for a bottleneck routine!)
 * only uses built-in modules (e.g. you can't import ``numpy`` or ``PIL`` into a ShedSkin module)
+
+The release announce for v0.8 includes a scalability graph http://shed-skin.blogspot.com/2011/06/shed-skin-08-programming-language.html showing compile times for longer Python modules. It can output either a compiled executable or an importable module.
 
 You run it using ``shedskin your_module.py``. In our case move ``pure_python_2.py`` into a new directory (``shedskin_pure_python\shedskin_pure_python.py``). We could make a new module (as we did for the Cython example) but for now we'll just one the one Python file.
 
@@ -848,13 +872,26 @@ When debugging it is helpful to know what types the code analysis has detected. 
 
     shedskin -a your_module.py
 
-and you'll have annotated ``.cpp`` and ``.hpp`` files which tie the generated C with the original Python. You can also disable bounds checking with ``-b`` and wrap-around checking with ``-w`` which can give a speed boost (if you're confident that your array indexing is correct!). For ``int64`` long integer support add ``-l``. For other flags see the documentation.
+and you'll have annotated ``.cpp`` and ``.hpp`` files which tie the generated C with the original Python. 
 
-**IAN_TODO link to Mark's AST graph**
+Profiling
+---------
 
-**IAN_TODO add comments about profiling from Mark**        
+I've never tried profiling ShedSkin but several options (using ValGrind and GProf) were presented in the Google Group: http://groups.google.com/group/shedskin-discuss/browse_thread/thread/fd39b6bb38cfb6d1
 
-**IAN_TODO optimisations? -ffast-math?  loop unrolling? auto vectorisation?**
+Faster code
+-----------
+
+You can disable bounds-checking with the ``-b`` flag, generally this gives a small speed improvement. Wrap-around checking can be disabled with ``-w``. Neither optimisation improved the run-time for this problem. For ``int64`` long integer support add ``-l``. For other flags see the documentation.
+
+The author made some notes in the ShedSkin Google Group http://groups.google.com/group/shedskin-discuss/browse_thread/thread/c5bf965a80292a43 on speeding up the code by editing the generated Makefile:
+
+* adding ``-ffast-math`` to ``FLAGS`` seems to reduce run-time by about 10%
+* compiling first with ``-fprofile-generate`` then ``-fprofile-use`` saves about 7%
+* using ``libgc 7.2alpha6`` instead of the common ``libgc 6.8`` helps about 3% (you may already use this one)
+
+It is possible that automatic vectorisation (e.g. with ``gcc`` http://gcc.gnu.org/projects/tree-ssa/vectorization.html) will help, I don't have an up to date ``gcc`` (e.g. 4.6) on my MacBook so I've yet to experiment with this.
+
 
 numpy vectors
 =============
@@ -1028,10 +1065,26 @@ You might choose to pre-compile an expression in a fast loop if the overhead of 
 pyCUDA
 ======
 
-**IAN_TODO explain the 3 CUDA examples, refer back to numpy vector solution, talk about old/new CUDA cards, single/double precision**
+Andreas Klöckner's pyCUDA wraps NVIDIA's C interface to their Compute Unified Device Architecture in a set of friendly Python API calls. A numpy-like interface is provided (slowest but easiest to use) along with an element-wise interface and a pure C code wrapper (both require you to write C code).
+
+In this tutorial I'm using an older MacBook with an NVIDIA 9400M graphics card. This card only supports ``single`` precision floating point arithmetic, newer cards (e.g. the GTX 480 shown in the graph at the start of this tutorial) also support ``double`` precision floating point numbers as used in all the other examples here. As a result the following examples show ``float32`` and ``complex64`` (comprising two ``float32`` numbers) rather than ``float64`` and ``complex128``. You can swap the comments around if you have a newer card.
+
+I would expect all future GPUs to support ``double`` precision arithmetic, possibly mobile phone GPUs will be limited to ``single`` precision for a while yet though.
+
+You'll have to spend some time getting your head around GPU programming. Vector operations are assumed (see the ``numpy`` vector examples above) and the GPU has its own memory that's separate from the CPU's memory, so data has to be copied to the card before processing.
+
+The copy operations incur a time overhead - remember that it takes time to copy data to the GPU, then time to run the code (which is typically faster running in parallel on the GPU than in series on a CPU), then it takes time to copy the result back. The overheads for the copying have to be less than the speed-up you obtain by using the GPU else you will see an overall worsening for your run time.
+
+I have a write-up on my blog from January 2010 when I wrote these early examples http://ianozsvald.com/2010/07/14/22937-faster-python-math-using-pycuda/ which includes links to two of the recommended CUDA texts (they're still relevant in 2011!). I suspect that newer books will be published later this year which will cover the newer CUDA 4.0 and new hardware capabilties. You might also find the links in this post to be useful too: http://ianozsvald.com/2010/09/17/demoing-pycuda-at-the-london-financial-python-user-group/
 
 numpy-like interface
 --------------------
+
+The numpy-like interface is the easiest. I add ``g`` to my variables to indicate if they're referring to data stored on the GPU. The inner loop in ``calculate_z_asnumpy_gpu`` looks like the vectorised ``numpy`` solution which is explained above, it just uses the pyCUDA syntax which is a touch different to ``numpy``'s.
+
+Behind the scenes CUDA code is generated and copied to the card when you first run your code, after that your data is transparently copied to and from the card as required. Note that overheads are incurred (you'll have to investigate the actual CUDA code to see what's happening) which is why this version runs slower than the others.
+
+**IAN_TODO dig back into the asnumpy example and time the statements, figure out where the slowdowns are (it has been a while since I wrote this piece of code...!)**
 
 ::
 
@@ -1113,6 +1166,14 @@ numpy-like interface
 ElementWise
 -----------
 
+The ``ElementwiseKernel`` lets us write a small amount of C to exploit the CUDA card well whilst using Python to handle all the data. Do note that at this stage (and the next with the ``SourceModule``) you'll be writing C by hand.
+
+Take a look at the ``complex_gpu`` declaration below, we create the basics of a C function signature by defining the input and output arguments as C arrays. The ``pycuda::complex...`` declarations wrap the Boost library's complex number C++ templates. I'm happy to say I made some (minor) contributions to the pyCUDA source by extending the complex number support a year back.
+
+After the signature in the second long string we define a ``for`` loop that will look rather familiar (assuming you can read C in place of Python!). For the remaining three lines we define the function's name, include a ``pycuda-complex.hpp`` header (we can include more than one header if required here) and tell pyCUDA to keep a copy of the compiled code for future use (or debugging - it is nice to find and read the generated C code).
+
+In ``calculate_z_gpu_elementwise`` we setup the same arrays on the GPU and then call our newly compiled C function with the GPU version of our arrays. Note that addressing is handled for you - all your function knows is that it is dealing with index ``i``, it doesn't calculate the index or perform any clever indexing. Behind the scenes pyCUDA *does* efficiently step your routine through large arrays, the ``ElementwiseKernel``'s generated code runs very efficiently.
+
 ::
 
     from pycuda.elementwise import ElementwiseKernel
@@ -1146,6 +1207,10 @@ ElementWise
 
 SourceModule
 ------------
+
+The ``SourceModule`` gives you the most amount of power before you'd step over to writing everything using one of the two CUDA library approaches purely in C/C++. It builds on the ``ElementwiseKernel`` by enabling you to define your own functions (and structs and classes) in a block of C code. You also have to index into your memory by hand by using the built in ``block...`` and ``grid...`` variables. Note that creating your own indexing system that efficiently uses CUDA's memory layout is non-trivial if you've not done it before! I recommend getting one of the recommended CUDA texts and reading up beforehand.
+
+The code below is essentially a copy of Andreas' built-in ``ElementwiseKernel`` code, exposed in my own ``SourceModule``. This was one of my early attempts to understand how pyCUDA functioned behind the scenes.
 
 ::
 
@@ -1186,7 +1251,6 @@ SourceModule
         z = z.astype(complex_type)
         q = q.astype(complex_type)
         output = np.resize(np.array(0,), q.shape)
-        # calc_gpu_sm is limited in size to whatever's the max GridX size (i.e. probably can't do 1000x1000 grids!)
         
         # calc_gpu_sm_newindexing uses a step to iterate through larger amounts of data (i.e. can do 1000x1000 grids!)
         calc_gpu_sm_newindexing(drv.In(z), drv.In(q), drv.InOut(output), numpy.int32(maxiter), numpy.int32(len(q)), grid=(400,1), block=(512,1,1))
@@ -1343,20 +1407,22 @@ I found that few jobs were distributed over the network poorly - jobs of several
 
 As shown at the start of the report the ParallelPython module is very efficient, we get almost a doubling in performance by using both cores on the laptop. When sending jobs over the network the network communications adds an additional overhead - if your jobs are long-running then this will be a minor part of your run-time.
 
-**IAN_TODO note that I'm working on sending binary .so files over the wire to same-architecture remote machines so cython/shedskin modules can be distributed on the fly, note that it doesn't (quite) work yet**
-
 Other examples?
 ===============
 
-In my examples I've used ``numpy`` to convert the ``output`` array into an RGB string for ``PIL``. Since ``numpy`` isn't supported by PyPy this code won't work there - if you have a better way to do the conversion that only uses built-in modules I'd be happy to update this document (and attribute your improvement!).
+In my examples I've used ``numpy`` to convert the ``output`` array into an RGB string for ``PIL``. Since ``numpy`` isn't supported by PyPy this code won't work there. John Montgomery (http://www.littlespikeyland.com/ thanks!) has submitted a patch which replaces ``numpy`` with the ``array`` module, modify your code accordingly if you'd like to run it in PyPy:
 
 ::
 
     try:
+        import array
+        output = ((o + (256*o) + (256**2)*o) * 8 for o in output)
+        output = array.array('I', output)
+        #import numpy as np
+        #output = np.array(output)
+        #output = (output + (256*output) + (256**2)*output) * 8
+
         import Image
-        import numpy as np
-        output = np.array(output)
-        output = (output + (256*output) + (256**2)*output) * 8
         im = Image.new("RGB", (w/2, h/2))
         im.fromstring(output.tostring(), "raw", "RGBX", 0, -1)
         im.show()
@@ -1370,6 +1436,7 @@ I'd be interested in seeing the following examples implemented using the same co
 * Theano
 * pure C implementation (this must produce exactly the same validation sum) for reference
 * pyOpenCL
+* execnet (parallel execution environment that distributes binary libraries and allows use of different Python VMs)
 * pyMPI (which opens the door to more parallelisation in scientific environments)
 * Celery (which opens the door to more parallelisation in web-dev environments)
 * Hadoop and Map/Reduce with Python bindings
