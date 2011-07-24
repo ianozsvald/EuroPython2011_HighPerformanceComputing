@@ -37,7 +37,7 @@ Questions?
 License:
 
 * **Creative Commons By Attribution** (and if you meet me and like this report, I'd happily accept a beer)
-
+* Link to: http://ianozsvald.com/2011/07/24/high-performance-python-tutorial-v0-2-from-europython-2011
 
 Testimonials from EuroPython 2011
 =================================
