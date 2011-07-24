@@ -12,13 +12,13 @@ Author:
 
 Version:
 
-* 0.1_hastily_written_whilst_returing_from_EuroPython_20110626
+* 0.2_improved_in_evenings_over_the_last_few_weeks_20110724
 
 Websites: 
 
 * http://IanOzsvald.com (personal)
 * http://twitter.com/ianozsvald
-* http://MorConsulting.com (my A.I./H.P.C. consultancy)
+* http://MorConsulting.com (my Artificial Intelligence and High Performance Computing consultancy)
 
 Source:
 
@@ -36,7 +36,7 @@ Questions?
 
 License:
 
-* **Creative Commons By Attribution** (and if you find this useful and you meet me in reality, I will happily accept a beer :-))
+* **Creative Commons By Attribution** (and if you meet me and like this report, I'd happily accept a beer)
 
 
 Testimonials from EuroPython 2011
@@ -45,13 +45,14 @@ Testimonials from EuroPython 2011
 * *@ianozsvald does an excellent workshop on what one needs to know about performance and python #europython* **@LBdN**
 * *Ozsvald's training about speeding up tasks yesterday was awesome! #europython* **@Mirko_Rossini**
 * *PDF from @ianozsvald's High Performance Python workshop http://t.co/TS94l3V It allowed us to make parts of @setjam code 2x faster. Read it!* **@mstepniowski**
-* *Yup. I call it “Advanced Toilet Literature” http://lockerz.com/s/115235120”* **@emilbronikowski**
+* *Yup. I call it “Advanced Toilet Literature” http://lockerz.com/s/115235120* **@emilbronikowski**
 * *#EuroPython high performance #Python workshop by @ianozsvald is most excellent! Learned about RunSnakeRun, line profiler, dis module, Cython* **@mstepniowski**
 * *@mstepniowski @ianozsvald line profiler is amazing, and such a hidden gem* **@zeeg**
 * *Inspired to try out pp after @ianozsvald #EuroPython training* **@ajw007**
 * *@ianozsvald's talk on speeding up #python code is high speed itself! #europython* **@snakecharmerb**
 * *Don't miss this, Ian's training was terrific! RT @ianozsvald: 43 pages of High Performance Python tutorial PDF written up #europython* **@europython**
 * *“@ianozsvald The #Europython2011 HighPerf #python material is absolutely amazing \o/ Thanks for that !”* **@BaltoRouberol**
+* *@ianozsvald looks great and possibly more content than in the talk! [...]* **@ajw007**
 * *First half of the optimization training with @ianozsvald (http://t.co/zU16MXQ) has been fun and really interesting #europython* **@pagles**
 
 .. figure:: HappyClassPhoto.jpg
@@ -71,12 +72,17 @@ If you'd like some background on programming for parallelised CPUs then the Econ
 
 I'll also give myself a quick plug - I run an Artificial Intelligence consultancy (http://MorConsulting.com) and rather enjoy training with Python.
 
-**IAN_TODO link to the benchmarks I showed in the tutorial that compare these Python tools with C, Scala, Java etc versions of a number of CPU-bound benchmarks**
+I'd like to note that this report is a summary of work over many weeks preparing for EuroPython. I didn't perform statistically valid tests, I did however run the timings many times and can vouch for their stability. The goal isn't to suggest that there is "one best way" to do things - I'm showing you several journeys that takes different routes to faster execution times for this problem.
+
+If you're curious to see how the stock CPython interpreter compares to other languages like C and JavaScript then see this benchmark: http://shootout.alioth.debian.org/u32/which-programming-languages-are-fastest.php - you'll note that it does rather poorly (up to 100* slower than C!). It also compares poorly against JavaScript V8 which is dynamically typed and interpreted - much like CPython. Playing with comparisons against the JavaScript V8 examples got me started on this tutorial.
+
+To see how CPython, PyPy, ShedSkin, IronPython and Jython compare to other languages (including C and V8) see this benchmark: http://attractivechaos.github.com/plb/ - as shown we can make Python run to 2-6* slower than C with little effort, and the gap with C is shrinking all the time. The flipside of course is that developing with Python is far faster than developing with C!
+
 
 Changelog
 ---------
 
-* (v0.2 expected early July 2011 on http://ianozsvald.com)
+* v0.2 July 2011 with longer write-ups, some code improvements
 * v0.1 earliest release (rather draft-y) end of June 2011 straight after EuroPython 2011
 
 Credits
@@ -619,6 +625,35 @@ By running ``pypy pure_python.py 1000 1000`` on my MacBook it takes 5.9 seconds,
 
 As an additional test (not shown in the graphs) I ran ``pypy shedskin2.py 1000 1000`` which runs the expanded math version of the ``shedskin`` variant below (this replaces ``complex`` numbers with ``floats`` and expands ``abs`` to avoid the square root). The ``shedskin2.py`` result takes 3.2 seconds (which is still much slower than the 0.4s version compiled using ``shedskin``).
 
+numpy
+-----
+
+Work has started to add a new ``numpy`` module to PyPy. Currently (July 2011) it only supports arrays of double precision numbers and offers very few vectorised functions:
+
+::
+
+    Python 2.7.1 (65b1ed60d7da, Jul 12 2011, 02:00:13)
+    [PyPy 1.5.0-alpha0 with GCC 4.0.1] on darwin
+    Type "help", "copyright", "credits" or "license" for more information.
+    And now for something completely different: ``2008 will be the year of the
+    desktop on #pypy''
+    >>>> import numpy
+    >>>> dir(numpy)
+    ['__doc__', '__file__', '__name__', '__package__', 'abs', 'absolute', 'array', 'average',
+     'copysign', 'empty', 'exp', 'floor', 'maximum', 'mean', 'minimum', 'negative', 'ones', 
+     'reciprocal', 'sign', 'zeros']
+    >>>> a = numpy.array(range(10))
+    >>>> [x for x in a] # print the contents of a
+    [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]
+    >>>> 
+    >>>> [x for x in a+3] # perform a vectorised addition on a
+    [3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0]
+
+It would be possible to rewrite the Mandelbrot example using these functions by using non-complex arithmetic (see e.g. the ``shedskin2.py`` example later). This is a challenge I'll leave to the reader.
+
+I strongly urge you to join the PyPy mailing list and talk about your needs for the new ``numpy`` library. PyPy shows great promise for high performance Python with little effort, having access to the wide range of algorithms in the existing ``numpy`` library would be a massive boon to the community.
+
+
 Psyco
 =====
 
@@ -775,6 +810,12 @@ The directives can be enabled globally (in the Cython) file using a comment at t
 
 There is also experimental ``infer_types`` support which is supposed to guess the type of variables, I've not achieved any speed-up when trying this (unlike for ShedSkin where the automatic type inference works wonderfully well).
 
+prange
+------
+
+In the upcoming release of Cython (v0.15 - expected after July 2011) we should see the introduction of the ``prange`` construct: http://wiki.cython.org/enhancements/prange
+
+This wraps the OpenMP ``parallel for`` directive so multiple cores can operate on a container at the same time. This should work well for the Mandelbrot example here.
 
 Cython with numpy arrays
 ========================
@@ -1070,6 +1111,13 @@ Andreas Klöckner's pyCUDA wraps NVIDIA's C interface to their Compute Unified D
 In this tutorial I'm using an older MacBook with an NVIDIA 9400M graphics card. This card only supports ``single`` precision floating point arithmetic, newer cards (e.g. the GTX 480 shown in the graph at the start of this tutorial) also support ``double`` precision floating point numbers as used in all the other examples here. As a result the following examples show ``float32`` and ``complex64`` (comprising two ``float32`` numbers) rather than ``float64`` and ``complex128``. You can swap the comments around if you have a newer card.
 
 I would expect all future GPUs to support ``double`` precision arithmetic, possibly mobile phone GPUs will be limited to ``single`` precision for a while yet though.
+
+If you want an idea of what a high-spec GPU looks like - this is the GTX 480 in my desktop (note how it is large compared to the motherboard!) at my physics client:
+
+.. figure:: GTX480.jpg
+    :align: center
+
+    GTX 480 GPU (top of the line in 2010!)
 
 You'll have to spend some time getting your head around GPU programming. Vector operations are assumed (see the ``numpy`` vector examples above) and the GPU has its own memory that's separate from the CPU's memory, so data has to be copied to the card before processing.
 
@@ -1407,6 +1455,33 @@ I found that few jobs were distributed over the network poorly - jobs of several
 
 As shown at the start of the report the ParallelPython module is very efficient, we get almost a doubling in performance by using both cores on the laptop. When sending jobs over the network the network communications adds an additional overhead - if your jobs are long-running then this will be a minor part of your run-time.
 
+Other ways to make things run faster
+====================================
+
+After the release of v0.1 of this report some people have asked me to include notes on algorithmic choices and other options. Choosing the right algorithm is incredibly important, often in Python you can improve your run-times by trading some storage space for extra speed by changing the type of container you use.
+
+Algorithmic choices
+-------------------
+
+If you're not familiar with "Big O Notation" then read up in WikiPedia: http://en.wikipedia.org/wiki/Big_o_notation
+
+There are some notes on algorithmic time complexity here: http://wiki.python.org/moin/TimeComplexity
+
+As you'll see the act of appending to a ``list`` is O(1) (i.e. constant time) but inserting into a ``list`` is O(n) (i.e. it can be rather slow if 'n' is big!). Similarity testing if an item is ``in`` a ``list`` is O(n). If all you're interested in is knowing whether unique items are in a ``list`` then you might want to use a ``set`` where ``in`` costs between O(1) and O(n). The downside is that a ``set`` consumes more memory as it has to manage extra data structures that allow for the faster inserts and lookups.
+
+Keep local references
+---------------------
+
+Earlier in this report I showed "A (slightly) faster CPython implementation" where we reduced the number of local dereference operations that CPython would have to perform. Generally it is wise to dereference as infrequently as possible - you can go as far as doing something like ``local_pow = math.pow`` to make a local reference to the power function, then you can use ``local_pow(...)`` in a tight inner loop rather than ``math.pow(...)``.
+
+Don't take the above as any kind of law - test it by timing the effect! Note that PyPy will probably make this optimisation obsolete!
+
+Performance Tips
+----------------
+
+Do take a look at http://wiki.python.org/moin/PythonSpeed/PerformanceTips - also note that some of the tips are outdated. As mentioned above don't take anything as a law - make small changes and test for changes in speed. Sometimes you'll be surprised to discover that things run slower when your intuition said they would go faster! 
+
+
 Other examples?
 ===============
 
@@ -1430,7 +1505,9 @@ In my examples I've used ``numpy`` to convert the ``output`` array into an RGB s
         # Bail gracefully if we're using PyPy
         print "Couldn't import Image or numpy:", str(err)
 
-I'd be interested in seeing the following examples implemented using the same code format as above (I've listed them as most-to-least interesting). I've not made these myself as I haven't tried any of them yet. If you want to put an example together, please send it through to me:
+During the tutorial I mentioned the refactoring tool http://rope.sourceforge.net/ - the GUI is somewhat primitive (I've not tried hooking it into other editors yet) but the refactorings work on large files (e.g. 5,000 lines of Python). I've used it to refactor unwieldy client code, pulling out functions, timing them, then improving their speed. I'd suggest you check it out.
+
+For this report I'd be interested in seeing the following examples implemented using the same code format as above (I've listed them as most-to-least interesting). I've not made these myself as I haven't tried any of them yet. If you want to put an example together, please send it through to me:
 
 * Copperhead
 * Theano
@@ -1443,3 +1520,8 @@ I'd be interested in seeing the following examples implemented using the same co
 * ctypes using C implementation so Python is the nice wrapper
 * Final versions of ShedSkin and Cython examples which go "as fast as possible"
 * Additional compiler flags that would make ShedSkin and Cython go faster (without changing correctness)
+
+Thanks
+------
+
+I'd like to express my thanks again to the EuroPython 2011 organisers, I had an awful lot of fun preparing and giving this tutorial!
