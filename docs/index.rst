@@ -150,7 +150,7 @@ Techniques covered:
 MacBook Core2Duo 2.0GHz
 ------------------------
 
-Below I show the speed-ups obtained on my older laptop and later a comparitive study using a newer desktop with a faster GPU.
+Below I show the speed-ups obtained on my older laptop and later a comparative study using a newer desktop with a faster GPU.
 
 These timings are taken from my 2008 MacBook 2.0GHz with 4GB RAM. The GPU is a 9400M (very underpowered for this kind of work!).
 
@@ -165,7 +165,7 @@ PyPy 1.5      pure_python.py      8.9s
 
 Next we modify the code to make ``pure_python_2.py`` with less dereferences, it runs faster for both CPython and PyPy. Compiling with Cython doesn't give us much compared to using PyPy but once we've added static types and expanded the ``complex`` arithmetic we're down to 0.6s.
 
-Cython with ``numpy`` vectors in place of ``list`` containers runs even faster (I've not drilled into this code to confirm if code differences can be attributed to this speed-up - perhaps this is an exercise for the reader?). Using ShedSkin with no code modificatoins we drop to 12s, after expanding the ``complex`` arithmetic it drops to 0.4s beating all the other variants.
+Cython with ``numpy`` vectors in place of ``list`` containers runs even faster (I've not drilled into this code to confirm if code differences can be attributed to this speed-up - perhaps this is an exercise for the reader?). Using ShedSkin with no code modifications we drop to 12s, after expanding the ``complex`` arithmetic it drops to 0.4s beating all the other variants.
 
 Be aware that on my MacBook Cython uses ``gcc 4.0`` and ShedSkin uses ``gcc 4.2`` - it is possible that the minor speed variations can be attributed to the differences in compiler versions. I'd welcome someone with more time performing a strict comparison between the two versions (the 0.6s, 0.49s and 0.4s results) to see if Cython and ShedSkin are producing equivalently fast code.
 
@@ -220,7 +220,7 @@ The reduction in run time as we move from CPU to GPU is rather obvious:
 
 Finally we look at using multi-CPU and multi-computer scaling approaches. The goal here is to look at easy ways of parallelising to all the resources available around one desk (we're avoiding large clusters and cloud solutions in this report). 
 
-The first result is the ``pure_python_2.py`` result from the second table (shown only for reference). ``multi.py`` uses the ``multiprocessing`` module to parallelise across two cores in my MacBook. The first ParallelPython example works exaclty the same as ``multi.py`` but has lower overhead (I believe it does less serialising of the environment). The second version is parallelised across three machines and their CPUs. 
+The first result is the ``pure_python_2.py`` result from the second table (shown only for reference). ``multi.py`` uses the ``multiprocessing`` module to parallelise across two cores in my MacBook. The first ParallelPython example works exactly the same as ``multi.py`` but has lower overhead (I believe it does less serialising of the environment). The second version is parallelised across three machines and their CPUs. 
 
 The final result uses the 0.6s Cython version (running on one core) and shows the overheads of splitting work and serialising it to new environments (though on a larger problem the overheads would shrink in comparison to the savings made).
 
@@ -820,11 +820,11 @@ This wraps the OpenMP ``parallel for`` directive so multiple cores can operate o
 Cython with numpy arrays
 ========================
 
-Below we have a similar Cython file, the original version for this approach was subbmited by Didrik Pinte of Enthought (thanks Didrik!). The main difference is the annotation of ``numpy`` arrays, see the tutorial for a great walkthrough: http://docs.cython.org/src/tutorial/numpy.html (and there's a bit more detail in the wiki: http://wiki.cython.org/tutorials/numpy).
+Below we have a similar Cython file, the original version for this approach was submitted by Didrik Pinte of Enthought (thanks Didrik!). The main difference is the annotation of ``numpy`` arrays, see the tutorial for a great walkthrough: http://docs.cython.org/src/tutorial/numpy.html (and there's a bit more detail in the wiki: http://wiki.cython.org/tutorials/numpy).
 
 Using the ``numpy`` approach Python is able to address the underlying C data structures that are wrapped by ``numpy`` without the Python call overheads. This version of the Mandelbrot solver runs almost at the same speed as the ShedSkin solution (shown in the next section), making it the second fastest single-CPU implementation in this tutorial.
 
-**IAN_TODO I ought to remove Didrik's local declaration of z = 0+0j to make it a fairer comparision with the rest of the code (though my gut says that this will have little effect on the runtime)**
+**IAN_TODO I ought to remove Didrik's local declaration of z = 0+0j to make it a fairer comparison with the rest of the code (though my gut says that this will have little effect on the runtime)**
 
 ::
 
@@ -970,7 +970,7 @@ If the above code looks odd to you, read it as:
 
 If this is unclear then I urge you to try it at the command line, stepping through each result. Start with a small ``array`` of ``complex`` numbers and build it up.
 
-You'll probably be curious why this code runs slower than the other ``numpy`` version that uses Cython. The reason is that the vectorised code can't stop early on each iteration if ``output`` has been set - it has to do the same operations for all items in the array. This is a shortcoming of this example. Don't be put off by vectors, normally you can't exit loops early (particuarly in the physics problems I tend to work on).
+You'll probably be curious why this code runs slower than the other ``numpy`` version that uses Cython. The reason is that the vectorised code can't stop early on each iteration if ``output`` has been set - it has to do the same operations for all items in the array. This is a shortcoming of this example. Don't be put off by vectors, normally you can't exit loops early (particularly in the physics problems I tend to work on).
 
 Behind the scenes ``numpy`` is using very fast C optimised math libraries to perform these calculations very quickly. If you consider how much extra work it is having to do (since it can't exit each calculation loop when ``output`` is calculated for a co-ordinate) it is amazing that it is still going so fast!
 
@@ -1123,7 +1123,7 @@ You'll have to spend some time getting your head around GPU programming. Vector 
 
 The copy operations incur a time overhead - remember that it takes time to copy data to the GPU, then time to run the code (which is typically faster running in parallel on the GPU than in series on a CPU), then it takes time to copy the result back. The overheads for the copying have to be less than the speed-up you obtain by using the GPU else you will see an overall worsening for your run time.
 
-I have a write-up on my blog from January 2010 when I wrote these early examples http://ianozsvald.com/2010/07/14/22937-faster-python-math-using-pycuda/ which includes links to two of the recommended CUDA texts (they're still relevant in 2011!). I suspect that newer books will be published later this year which will cover the newer CUDA 4.0 and new hardware capabilties. You might also find the links in this post to be useful too: http://ianozsvald.com/2010/09/17/demoing-pycuda-at-the-london-financial-python-user-group/
+I have a write-up on my blog from January 2010 when I wrote these early examples http://ianozsvald.com/2010/07/14/22937-faster-python-math-using-pycuda/ which includes links to two of the recommended CUDA texts (they're still relevant in 2011!). I suspect that newer books will be published later this year which will cover the newer CUDA 4.0 and new hardware capabilities. You might also find the links in this post to be useful too: http://ianozsvald.com/2010/09/17/demoing-pycuda-at-the-london-financial-python-user-group/
 
 numpy-like interface
 --------------------
